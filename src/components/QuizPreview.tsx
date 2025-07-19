@@ -10,14 +10,14 @@ export default function QuizPreview({
   
     return (
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold mb-2">📋 Generated Quiz</h2>
+        <h2 className="text-xl font-semibold mb-2 text-gray-800">📋 Generated Quiz</h2>
   
         {questions.map((q, idx) => (
           <div key={idx} className="border p-4 rounded-lg bg-gray-50">
-            <p className="font-medium mb-2">{idx + 1}. {q.question}</p>
+            <p className="font-medium mb-2 text-gray-800">{idx + 1}. {q.question}</p>
   
             {q.type === "mcq" && q.options && (
-              <ul className="list-disc pl-6 space-y-1">
+              <ul className="list-disc pl-6 space-y-1 text-gray-800">
                 {q.options.map((opt, i) => (
                   <li key={i}>{opt}</li>
                 ))}
@@ -25,11 +25,11 @@ export default function QuizPreview({
             )}
   
             {q.type === "fill" && (
-              <p className="italic text-gray-900">[Fill in the blank]</p>
+              <p className="italic text-gray-800">[Fill in the blank]</p>
             )}
   
             {q.type === "truefalse" && (
-              <p className="italic text-gray-900">[True or False]</p>
+              <p className="italic text-gray-800">[True or False]</p>
             )}
           </div>
         ))}

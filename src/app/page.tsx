@@ -3,10 +3,19 @@
 import UploadForm from "../components/UploadForm";
 import QuizPreview from "../components/QuizPreview";
 import { useState } from "react";
+import { generateMockQuiz } from "../lib/generateMockQuiz";
 
 export default function Home() {
   const [quizText, setQuizText] = useState("");
-  const [quizQuestions, setQuizQuestions] = useState([]);
+  type QuizQuestion = {
+    type: "mcq" | "fill" | "truefalse";
+    question: string;
+    options?: string[];
+    answer: string;
+  };
+  
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  
 
   return (
     <main className="min-h-screen bg-gray-100 p-6">
@@ -16,7 +25,8 @@ export default function Home() {
         <UploadForm
           onTextSubmit={(text: string) => {
             setQuizText(text);
-            // TODO: send text to GPT
+            const generated = generateMockQuiz(text);
+            setQuizQuestions(generated);
           }}
         />
 
