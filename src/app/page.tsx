@@ -23,13 +23,22 @@ export default function Home() {
         <h1 className="text-2xl font-bold mb-4 text-gray-800">🧠 AI Quiz Generator</h1>
 
         <UploadForm
-          onTextSubmit={(text: string) => {
-            setQuizText(text);
-            const generated = generateMockQuiz(text);
-            setQuizQuestions(generated);
+          onTextSubmit={async (text: string) => {
+            setQuizQuestions([]); // Clear old quiz
+            try {
+              const res = await fetch("/api/generate-quiz", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text }),
+              });
+              const data = await res.json();
+              setQuizQuestions(data.quiz);
+            } catch (err) {
+              console.error(err);
+            }
           }}
         />
-
+        
         <hr className="my-6" />
 
         <QuizPreview questions={quizQuestions} />
