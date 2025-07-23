@@ -1,6 +1,6 @@
-'use client';
-
-import UploadForm from "../components/UploadForm";
+"use client";
+import TextUploadForm from "../components/TextUploadForm";
+import PdfUploadForm from "../components/PdfUploadForm";
 import QuizPreview from "../components/QuizPreview";
 import { useState } from "react";
 import Spinner from "@/components/Spinner";
@@ -17,8 +17,8 @@ export default function Home() {
   };
 
   const handleTextSubmit = async (text: string) => {
-    setQuizQuestions([]); // Clear old quiz
-    setLoading(true);     // Show spinner
+    setQuizQuestions([]);
+    setLoading(true);
     try {
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
@@ -30,7 +30,27 @@ export default function Home() {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false); // Hide spinner
+      setLoading(false);
+    }
+  };
+
+  const handlePdfUpload = async (file: File) => {
+    setQuizQuestions([]);
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/generate-quiz", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setQuizQuestions(data.quiz);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,17 +59,15 @@ export default function Home() {
       <div className="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl p-6">
         <h1 className="text-2xl font-bold mb-4 text-gray-800">🧠 AI Quiz Generator</h1>
 
-        {/* Upload Form */}
-        <UploadForm onTextSubmit={handleTextSubmit} />
+        <div className="space-y-6">
+          <TextUploadForm onTextSubmit={handleTextSubmit} />
+          <PdfUploadForm onPdfUpload={handlePdfUpload} />
+        </div>
 
         <hr className="my-6" />
 
-        {/* Show Spinner or Quiz Preview */}
-        {loading ? (
-          <Spinner />
-        ) : (
-          quizQuestions.length > 0 && <QuizPreview questions={quizQuestions} />
-        )}
+        {loading ? <Spinner /> : quizQuestions.length > 0 && <QuizPreview questions={Array.isArray(quizQuestions) ? quizQuestions : []} />
+      }
       </div>
     </main>
   );
