@@ -19,23 +19,32 @@ function cleanGeminiResponse(text: string): string {
   if (firstBracket !== -1 && lastBracket !== -1) {
     cleaned = cleaned.slice(firstBracket, lastBracket + 1);
   }
-
+  
   return cleaned;
 }
 
 // Generic function to call Gemini
-async function generateQuiz({ text, pdfBase64 }: { text?: string; pdfBase64?: string }) {
-  const basePrompt = `Generate 5 quiz questions based on the ${
+async function generateQuiz({
+  text,
+  pdfBase64,
+  difficulty = "medium",
+}: {
+  text?: string;
+  pdfBase64?: string;
+  difficulty?: string;
+}) {
+  const basePrompt = `Generate 5 ${difficulty}-level quiz questions based on the ${
     pdfBase64 ? "PDF file" : "following text"
   }:
   ${text ? `"${text}"` : ""}
   Return the result strictly as a JSON array. Do not add any explanations or text outside the JSON.
-
+  
   Each quiz question should have:
   - "type": "mcq" or "fill"
   - "question": the question text
   - "options": an array of 4 options (for mcq only)
   - "answer": the correct answer.`;
+  
 
   const contents: any[] = [{ role: "user", parts: [{ text: basePrompt }] }];
 
@@ -104,12 +113,13 @@ export async function POST(req: Request) {
 
       const arrayBuffer = await file.arrayBuffer();
       const base64PDF = Buffer.from(arrayBuffer).toString("base64");
-      const quiz = await generateQuiz({ pdfBase64: base64PDF });
+      const difficulty = formData.get("difficulty")?.toString() || "medium"; // default
+      const quiz = await generateQuiz({ pdfBase64: base64PDF, difficulty });
       return NextResponse.json({ quiz });
     } else {
       // Handle Text Input
-      const { text } = await req.json();
-      const quiz = await generateQuiz({ text });
+      const { text, difficulty } = await req.json();
+      const quiz = await generateQuiz({ text, difficulty });
       return NextResponse.json({ quiz });
     }
   } catch (err: any) {
