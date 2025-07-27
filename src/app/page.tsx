@@ -12,7 +12,14 @@ export default function Home() {
   const [quizSettings, useQuizSettings] = useState({
     difficulty: "medium",
     numQuestions: 5,
-    types:["mcq", "fill"],
+    type: {
+      selectedTypes: [],
+      distribution: {
+        mcq: 0,
+        fill: 0,
+        truefalse: 0,
+      },
+    },
   });
 
   // Type definition for a quiz question

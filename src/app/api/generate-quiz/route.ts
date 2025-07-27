@@ -29,12 +29,21 @@ async function generateQuiz({
   pdfBase64,
   difficulty = "medium",
   numQuestions = 5,
+  type = {
+    selectedTypes: [],
+    distribution: {},
+  },
 }: {
   text?: string;
   pdfBase64?: string;
   difficulty?: string;
   numQuestions?: number;
+  type?: {
+    selectedTypes: string[];
+    distribution: Record<string, number>;
+  };
 }) {
+  // ...
   const basePrompt = `Generate ${numQuestions} ${difficulty}-level quiz questions based on the ${
     pdfBase64 ? "PDF file" : "following text"
   }:
@@ -42,10 +51,12 @@ async function generateQuiz({
   Return the result strictly as a JSON array. Do not add any explanations or text outside the JSON.
   
   Each quiz question should have:
-  - "type": "mcq" or "fill"
+  - "type": ${type.selectedTypes.join(", ")}
   - "question": the question text
   - "options": an array of 4 options (for mcq only)
-  - "answer": the correct answer.`;
+  - "answer": the correct answer.
+  The distribution of question types should be: 
+  - ${Object.keys(type.distribution).map(key => `${key}: ${type.distribution[key]}`).join(', ')}`;
 
   const contents: any[] = [{ role: "user", parts: [{ text: basePrompt }] }];
 
