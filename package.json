@@ -12,7 +12,8 @@
     "@google/genai": "^1.10.0",
     "next": "15.3.5",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-mobile-picker": "^1.1.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

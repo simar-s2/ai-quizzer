@@ -10,7 +10,7 @@ const Difficulty = ({
     };
   
     return (
-      <div>
+      <div className="w-1/2">
         <label htmlFor="difficulty" className="text-sm font-medium text-gray-700 dark:text-gray-200">
           Difficulty
         </label>

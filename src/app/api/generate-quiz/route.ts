@@ -28,12 +28,14 @@ async function generateQuiz({
   text,
   pdfBase64,
   difficulty = "medium",
+  numQuestions = 5,
 }: {
   text?: string;
   pdfBase64?: string;
   difficulty?: string;
+  numQuestions?: number;
 }) {
-  const basePrompt = `Generate 5 ${difficulty}-level quiz questions based on the ${
+  const basePrompt = `Generate ${numQuestions} ${difficulty}-level quiz questions based on the ${
     pdfBase64 ? "PDF file" : "following text"
   }:
   ${text ? `"${text}"` : ""}
@@ -44,7 +46,6 @@ async function generateQuiz({
   - "question": the question text
   - "options": an array of 4 options (for mcq only)
   - "answer": the correct answer.`;
-  
 
   const contents: any[] = [{ role: "user", parts: [{ text: basePrompt }] }];
 
@@ -113,13 +114,14 @@ export async function POST(req: Request) {
 
       const arrayBuffer = await file.arrayBuffer();
       const base64PDF = Buffer.from(arrayBuffer).toString("base64");
-      const difficulty = formData.get("difficulty")?.toString() || "medium"; // default
-      const quiz = await generateQuiz({ pdfBase64: base64PDF, difficulty });
+      const settings = formData.get("settings")?.toString() || "{}";
+      const settingsJson = JSON.parse(settings);
+      const quiz = await generateQuiz({ pdfBase64: base64PDF, ...settingsJson });
       return NextResponse.json({ quiz });
     } else {
       // Handle Text Input
-      const { text, difficulty } = await req.json();
-      const quiz = await generateQuiz({ text, difficulty });
+      const { text, settings } = await req.json();
+      const quiz = await generateQuiz({ text, ...settings });
       return NextResponse.json({ quiz });
     }
   } catch (err: any) {
