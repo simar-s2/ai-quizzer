@@ -88,14 +88,14 @@ export default function Home() {
       <div className="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl p-6">
         <h1 className="text-2xl font-bold mb-4 text-gray-800">🧠 AI Quiz Generator</h1>
 
-        <div className="space-y-6">
+        <div className="w-full space-y-6">
           <UploadForm onTextSubmit={handleTextSubmit} onPdfUpload={handlePdfUpload} />
           <QuizSettings quizSettings={quizSettings} setQuizSettings={useQuizSettings} />
         </div>
 
         <hr className="my-6" />
 
-        {loading ? <Spinner /> : quizQuestions.length > 0 && <QuizPreview questions={Array.isArray(quizQuestions) ? quizQuestions : []} />}
+        {loading ? <div className="flex justify-center items-center"><Spinner /></div> : quizQuestions.length > 0 && <QuizPreview questions={Array.isArray(quizQuestions) ? quizQuestions : []} />}
       </div>
     </main>
   );

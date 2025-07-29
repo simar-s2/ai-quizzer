@@ -1,3 +1,7 @@
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+
 const NumQuestions = ({
   quizSettings,
   setQuizSettings,
@@ -29,21 +33,21 @@ const NumQuestions = ({
   };
 
   return (
-    <div className="bg-gray-100 p-4 rounded-2xl shadow mb-4">
-      <label htmlFor="numQuestions" className="block font-semibold mb-2 text-gray-700">
+    <Card className="p-4">
+      <Label htmlFor="numQuestions" className="block font-semibold">
         Number of Questions
-      </label>
-      <input
+      </Label>
+      <Input
         type="number"
         id="numQuestions"
         name="numQuestions"
         min={1}
         max={50}
-        className="w-24 rounded-lg px-2 py-1 border border-gray-300 focus:outline-none focus:ring focus:border-blue-300 bg-white text-gray-900"
+        className="w-24 rounded-lg"
         value={quizSettings.numQuestions}
         onChange={handleNumQuestionsChange}
       />
-    </div>
+    </Card>
   );
 };
 

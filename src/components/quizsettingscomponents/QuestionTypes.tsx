@@ -1,4 +1,9 @@
 import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface typeProps {
   quizSettings: any;
@@ -13,16 +18,16 @@ const typeKeyMap: Record<string, string> = {
   "Multiple Choice": "mcq",
 };
 
-const type = ({ quizSettings, setQuizSettings }: typeProps) => {
+const Type = ({ quizSettings, setQuizSettings }: typeProps) => {
   const [customDistribution, setCustomDistribution] = useState(false);
 
   const handleTypeToggle = (type: string) => {
     const updatedTypes = quizSettings.type?.selectedTypes || [];
-  
+
     const newTypes = updatedTypes.includes(typeKeyMap[type])
       ? updatedTypes.filter((t: string) => t !== typeKeyMap[type])
       : [...updatedTypes, typeKeyMap[type]];
-  
+
     setQuizSettings({
       ...quizSettings,
       type: {
@@ -35,16 +40,18 @@ const type = ({ quizSettings, setQuizSettings }: typeProps) => {
   const handleDistributionChange = (type: string, value: string) => {
     const key = typeKeyMap[type];
     const count = Math.max(0, parseInt(value) || 0);
-  
+
     const totalQuestions = quizSettings.numQuestions;
-    const newDistributionTotal = Object.values(quizSettings.type?.distribution as 
-      Record<string, number>).reduce((a, b) => a + b, 0) - 
-      (quizSettings.type?.distribution as Record<string, number>)[key] + count;  
+    const newDistributionTotal = Object.values(quizSettings.type?.distribution as Record<string, number>)
+      .reduce((a, b) => a + b, 0)
+      - (quizSettings.type?.distribution as Record<string, number>)[key]
+      + count;
+
     if (newDistributionTotal > totalQuestions) {
       alert("The total number of questions cannot exceed the maximum allowed.");
       return;
     }
-  
+
     setQuizSettings({
       ...quizSettings,
       type: {
@@ -58,33 +65,29 @@ const type = ({ quizSettings, setQuizSettings }: typeProps) => {
   };
 
   return (
-    <div className="bg-gray-100 p-4 rounded-2xl shadow mb-4">
-      <label className="block font-semibold mb-2 text-gray-700">Question Types</label>
+    <Card className="p-4">
+      <Label>Question Types</Label>
 
-      {/* Toggle for custom distribution */}
-      <div className="flex items-center mb-4">
-        <input
+      <div className="flex items-center space-x-2">
+        <Checkbox
           id="customDistribution"
-          type="checkbox"
           checked={customDistribution}
-          onChange={() => setCustomDistribution(!customDistribution)}
-          className="mr-2"
+          onCheckedChange={() => setCustomDistribution(!customDistribution)}
         />
-        <label htmlFor="customDistribution" className="text-gray-700">
+        <Label htmlFor="customDistribution">
           Customize number of each type
-        </label>
+        </Label>
       </div>
 
-      {/* If custom: show number inputs */}
       {customDistribution ? (
         <div className="grid grid-cols-1 gap-3">
           {QUESTION_TYPES.map((type) => (
             <div key={type} className="flex items-center justify-between">
-              <label className="text-gray-700">{type}</label>
-              <input
+              <Label>{type}</Label>
+              <Input
                 type="number"
                 min={0}
-                className="w-20 rounded-lg px-2 py-1 border border-gray-300 focus:outline-none focus:ring focus:border-blue-300"
+                className="w-24"
                 value={quizSettings.type?.distribution?.[typeKeyMap[type]] || ""}
                 onChange={(e) => handleDistributionChange(type, e.target.value)}
               />
@@ -92,27 +95,24 @@ const type = ({ quizSettings, setQuizSettings }: typeProps) => {
           ))}
         </div>
       ) : (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex gap-3">
           {QUESTION_TYPES.map((type) => {
             const isSelected = quizSettings.type?.selectedTypes?.includes(typeKeyMap[type]);
             return (
-              <button
+              <Button
+                variant={isSelected ? "default" : "secondary"}
                 key={type}
                 onClick={() => handleTypeToggle(type)}
-                className={`px-4 py-2 rounded-xl border ${
-                  isSelected
-                    ? "bg-blue-500 text-white border-blue-600"
-                    : "bg-white text-gray-700 border-gray-300"
-                }`}
               >
                 {type}
-              </button>
+              </Button>
             );
           })}
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 
-export default type;
+export default Type;
+

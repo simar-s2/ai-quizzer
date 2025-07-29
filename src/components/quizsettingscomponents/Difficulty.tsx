@@ -1,3 +1,15 @@
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 const Difficulty = ({
     quizSettings,
     setQuizSettings,
@@ -5,27 +17,32 @@ const Difficulty = ({
     quizSettings: any;
     setQuizSettings: React.Dispatch<React.SetStateAction<any>>;
   }) => {
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setQuizSettings({ ...quizSettings, difficulty: e.target.value });
+    const handleChange = (value: string) => {
+      setQuizSettings({ ...quizSettings, difficulty: value });
     };
   
     return (
-      <div className="bg-gray-100 p-4 rounded-2xl shadow mb-4">
-        <label htmlFor="difficulty" className="block font-semibold mb-2 text-gray-700">
+      <Card className="p-4">
+        <Label htmlFor="difficulty" className="block font-semibold">
           Difficulty
-        </label>
-        <select
-          id="difficulty"
+        </Label>
+        <Select 
           name="difficulty"
-          className="w-full rounded-lg px-2 py-2 border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring focus:border-blue-300"
           value={quizSettings.difficulty}
-          onChange={handleChange}
-        >
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
-      </div>
+          onValueChange={handleChange}
+          >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select a difficulty" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="easy">Easy</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="hard">Hard</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </Card>
     );
   };
   
