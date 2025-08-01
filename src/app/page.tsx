@@ -18,13 +18,15 @@ export default function Home() {
         mcq: 0,
         fill: 0,
         truefalse: 0,
+        shortanswer: 0,
+        essay: 0,
       },
     },
   });
 
   // Type definition for a quiz question
   type QuizQuestion = {
-    type: "mcq" | "fill" | "truefalse";
+    type: "mcq" | "fill" | "truefalse"| "shortanswer" | "essay";
     question: string;
     options?: string[];
     answer: string;
@@ -84,19 +86,14 @@ export default function Home() {
 
   // Render the page
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl p-6">
+    <main className="min-h-screen">
         <h1 className="text-2xl font-bold mb-4 text-gray-800">🧠 AI Quiz Generator</h1>
-
-        <div className="w-full space-y-6">
-          <UploadForm onTextSubmit={handleTextSubmit} onPdfUpload={handlePdfUpload} />
-          <QuizSettings quizSettings={quizSettings} setQuizSettings={useQuizSettings} />
-        </div>
-
+        <div className="flex flex-col gap-4"> 
+        <UploadForm onTextSubmit={handleTextSubmit} onPdfUpload={handlePdfUpload} />
+        <QuizSettings quizSettings={quizSettings} setQuizSettings={useQuizSettings} />
         <hr className="my-6" />
-
         {loading ? <div className="flex justify-center items-center"><Spinner /></div> : quizQuestions.length > 0 && <QuizPreview questions={Array.isArray(quizQuestions) ? quizQuestions : []} />}
-      </div>
+        </div>
     </main>
   );
 }

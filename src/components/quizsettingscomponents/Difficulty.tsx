@@ -39,6 +39,7 @@ const Difficulty = ({
               <SelectItem value="easy">Easy</SelectItem>
               <SelectItem value="medium">Medium</SelectItem>
               <SelectItem value="hard">Hard</SelectItem>
+              <SelectItem value="expert">Expert</SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>

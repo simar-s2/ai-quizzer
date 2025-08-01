@@ -10,12 +10,14 @@ interface typeProps {
   setQuizSettings: React.Dispatch<React.SetStateAction<any>>;
 }
 
-const QUESTION_TYPES = ["True/False", "Fill in the Blank", "Multiple Choice"];
+const QUESTION_TYPES = ["True/False", "Fill in the Blank", "Multiple Choice", "Short Answer", "Essay"];
 
 const typeKeyMap: Record<string, string> = {
   "True/False": "truefalse",
   "Fill in the Blank": "fill",
   "Multiple Choice": "mcq",
+  "Short Answer": "shortanswer",
+  "Essay": "essay",
 };
 
 const Type = ({ quizSettings, setQuizSettings }: typeProps) => {
@@ -65,7 +67,7 @@ const Type = ({ quizSettings, setQuizSettings }: typeProps) => {
   };
 
   return (
-    <Card className="p-4">
+    <Card className="flex p-4">
       <Label>Question Types</Label>
 
       <div className="flex items-center space-x-2">
@@ -95,7 +97,7 @@ const Type = ({ quizSettings, setQuizSettings }: typeProps) => {
           ))}
         </div>
       ) : (
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {QUESTION_TYPES.map((type) => {
             const isSelected = quizSettings.type?.selectedTypes?.includes(typeKeyMap[type]);
             return (

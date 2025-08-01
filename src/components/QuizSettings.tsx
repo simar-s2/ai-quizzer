@@ -9,7 +9,7 @@ const QuizSettings = ({ quizSettings, setQuizSettings }: {
     return (
         <div>
             <h2 className="text-xl font-bold mb-4 text-gray-800">🛠️ Quiz Settings</h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
                 <Difficulty quizSettings={quizSettings} setQuizSettings={setQuizSettings} />
                 <NumQuestions quizSettings={quizSettings} setQuizSettings={setQuizSettings} />
                 <QuestionTypes quizSettings={quizSettings} setQuizSettings={setQuizSettings}/>

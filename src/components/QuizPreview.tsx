@@ -1,4 +1,14 @@
-// components/QuizPreview.tsx
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+
+
 export default function QuizPreview({
     questions,
   }: {
@@ -9,11 +19,11 @@ export default function QuizPreview({
     }
   
     return (
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold mb-2 text-gray-800">📋 Generated Quiz</h2>
-  
+      <Card className="p-4">
+        <CardTitle className="text-xl font-semibold mb-2 text-gray-800">📋 Generated Quiz</CardTitle>
+
         {questions.map((q, idx) => (
-          <div key={idx} className="border p-4 rounded-lg bg-gray-50">
+          <Card key={idx} className="p-4">
             <p className="font-medium mb-2 text-gray-800">{idx + 1}. {q.question}</p>
   
             {q.type === "mcq" && q.options && (
@@ -31,9 +41,18 @@ export default function QuizPreview({
             {q.type === "truefalse" && (
               <p className="italic text-gray-800">[True or False]</p>
             )}
-          </div>
+
+            {q.type === "shortanswer" && (
+              <p className="italic text-gray-800">[Short Answer]</p>
+            )}
+  
+            {q.type === "essay" && (
+              <p className="italic text-gray-800">[Essay]</p>
+            )}
+  
+          </Card>
         ))}
-      </div>
+      </Card>
     );
   }
   
