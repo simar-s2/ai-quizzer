@@ -87,8 +87,8 @@ export default function Home() {
   // Render the page
   return (
     <main className="min-h-screen">
-        <h1 className="text-2xl font-bold mb-4 text-gray-800">🧠 AI Quiz Generator</h1>
-        <div className="flex flex-col gap-4"> 
+        <div className="flex flex-col justify-items-center max-w-2/3 mx-auto gap-4">
+        <h1 className="text-2xl font-bold">🧠 AI Quiz Generator</h1>
         <UploadForm onTextSubmit={handleTextSubmit} onPdfUpload={handlePdfUpload} />
         <QuizSettings quizSettings={quizSettings} setQuizSettings={useQuizSettings} />
         <hr className="my-6" />

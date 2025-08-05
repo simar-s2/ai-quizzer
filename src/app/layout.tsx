@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import AppSidebar from "../components/app-sidebar";
 import Navbar from "../components/navbar/navbar";
+import { AuthProvider } from '@/components/AuthProvider';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,6 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="h-screen flex flex-col">
+        <AuthProvider>
         {/* Top navbar */}
         <div className="h-16">
           <Navbar/>
@@ -37,6 +37,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {children}
           </main>
         </div>
+        </AuthProvider>
       </body>
     </html>
   );

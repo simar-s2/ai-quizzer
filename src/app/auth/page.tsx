@@ -3,7 +3,6 @@
 import { useState } from "react";
 import LoginForm from "@/components/LoginForm";
 import SignupForm from "@/components/SignupForm";
-import { Button } from "@/components/ui/button";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState<boolean>(true);
@@ -13,7 +12,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex items-center justify-center p-15">
         {isLogin ? <LoginForm onToggleForm={onToggleForm}/> : <SignupForm onToggleForm={onToggleForm}/>}
     </div>
   );
