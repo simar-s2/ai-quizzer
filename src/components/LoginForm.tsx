@@ -14,13 +14,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/components/AuthProvider"
 
-const { supabase } = useAuth()
-
 export default function LoginForm({
   onToggleForm,
   className,
   ...props
 }: React.ComponentPropsWithRef<"div"> & { onToggleForm: () => void }) {
+  const { supabase } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)

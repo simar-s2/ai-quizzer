@@ -13,7 +13,7 @@ export default function AuthPage() {
 
   return (
     <div className="flex items-center justify-center p-15">
-        {isLogin ? <LoginForm onToggleForm={onToggleForm}/> : <SignupForm onToggleForm={onToggleForm}/>}
+          {isLogin ? <LoginForm onToggleForm={onToggleForm}/> : <SignupForm onToggleForm={onToggleForm}/>}
     </div>
   );
 }

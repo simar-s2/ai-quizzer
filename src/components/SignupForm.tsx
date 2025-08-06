@@ -14,13 +14,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/components/AuthProvider"
 
-const { supabase } = useAuth()
-
 export default function SignUpForm({
   onToggleForm,
   className,
   ...props
 }: React.ComponentPropsWithRef<"div"> & { onToggleForm: () => void }) {
+    const { supabase } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -30,16 +29,22 @@ export default function SignUpForm({
     e.preventDefault()
     setLoading(true)
     setError("")
-
+  
     const { error } = await supabase.auth.signUp({
       email,
       password,
     })
-
+  
     if (error) {
       setError(error.message)
+    } else {
+      const { data: { session } } = await supabase.auth.getSession()
+      // Update the session state here
+      // For example, you can use the useAuth hook to update the session state
+      // const { updateSession } = useAuth()
+      // updateSession(session)
     }
-
+  
     setLoading(false)
   }
 
