@@ -21,11 +21,11 @@ export default function UploadForm({
   onPdfUpload,
   onTextSubmit,
 }: {
-  onPdfUpload: (file: File) => void;
+  onPdfUpload: (files: File[]) => void;
   onTextSubmit: (text: string) => void;
 }) {
   const [uploadType, setUploadType] = useState<UploadType>("pdf");
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfFiles, setPdfFiles] = useState<File[]>([]);
   const [text, setText] = useState("");
 
   const handleUploadTypeChange = (value: string) => {
@@ -36,9 +36,9 @@ export default function UploadForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (uploadType === "pdf" && pdfFile) {
-      onPdfUpload(pdfFile);
-      setPdfFile(null);
+    if (uploadType === "pdf" && pdfFiles.length > 0) {
+      onPdfUpload(pdfFiles);
+      setPdfFiles([]);
     } else if (uploadType === "text" && text.trim()) {
       onTextSubmit(text);
       setText("");
@@ -50,7 +50,7 @@ export default function UploadForm({
       <CardHeader>
         <CardTitle>Upload Input</CardTitle>
         <CardDescription>
-          Choose whether to upload a PDF file or enter text manually.
+          Choose whether to upload PDF files or enter text manually.
         </CardDescription>
       </CardHeader>
 
@@ -75,9 +75,13 @@ export default function UploadForm({
             <Input
               type="file"
               accept="application/pdf"
-              onChange={(e) =>
-                setPdfFile(e.target.files?.[0] ?? null)
-              }
+              multiple
+              onChange={(e) => {
+                const selectedFiles = e.target.files
+                  ? Array.from(e.target.files)
+                  : [];
+                setPdfFiles(selectedFiles);
+              }}
               className="mb-4"
             />
           ) : (
@@ -92,7 +96,7 @@ export default function UploadForm({
 
         <CardFooter>
           <Button type="submit" className="w-full">
-            {uploadType === "pdf" ? "Generate from PDF" : "Generate from Text"}
+            {uploadType === "pdf" ? "Generate from PDFs" : "Generate from Text"}
           </Button>
         </CardFooter>
       </form>

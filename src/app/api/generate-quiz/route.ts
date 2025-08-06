@@ -1,41 +1,52 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, createPartFromUri } from "@google/genai";
 
 const client = new GoogleGenAI({
   apiKey: process.env.GOOGLE_API_KEY || "",
 });
 
-// Remove code fences and extra text
+// Helper to clean Gemini's response
 function cleanGeminiResponse(text: string): string {
-  // Remove code fences
-  let cleaned = text
-    .replace(/```json/gi, "")
-    .replace(/```/g, "")
-    .trim();
-
-  // Try to find the first valid JSON array in the string
+  let cleaned = text.replace(/```json/gi, "").replace(/```/g, "").trim();
   const firstBracket = cleaned.indexOf("[");
   const lastBracket = cleaned.lastIndexOf("]");
   if (firstBracket !== -1 && lastBracket !== -1) {
     cleaned = cleaned.slice(firstBracket, lastBracket + 1);
   }
-  
   return cleaned;
 }
 
-// Generic function to call Gemini
+// Helper to upload and wait for file processing
+async function uploadAndWait(fileBlob: Blob, displayName: string) {
+  const file = await client.files.upload({
+    file: fileBlob,
+    config: { displayName },
+  });
+
+  let getFile = await client.files.get({ name: file.name ?? '' });
+  while (getFile.state === "PROCESSING") {
+    console.log(`Processing ${displayName}...`);
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    getFile = await client.files.get({ name: file.name ?? '' });
+  }
+
+  if (getFile.state === "FAILED") {
+    throw new Error(`File processing failed for ${displayName}`);
+  }
+
+  return getFile;
+}
+
+// Core Gemini function
 async function generateQuiz({
+  files,
   text,
-  pdfBase64,
   difficulty = "medium",
   numQuestions = 5,
-  type = {
-    selectedTypes: [],
-    distribution: {},
-  },
+  type = { selectedTypes: [], distribution: {} },
 }: {
+  files?: { uri: string; mimeType: string }[];
   text?: string;
-  pdfBase64?: string;
   difficulty?: string;
   numQuestions?: number;
   type?: {
@@ -43,9 +54,8 @@ async function generateQuiz({
     distribution: Record<string, number>;
   };
 }) {
-  // ...
   const basePrompt = `Generate ${numQuestions} ${difficulty}-level quiz questions based on the ${
-    pdfBase64 ? "PDF file" : "following text"
+    files ? "uploaded PDF documents" : "following text"
   }:
   ${text ? `"${text}"` : ""}
   Return the result strictly as a JSON array. Do not add any explanations or text outside the JSON.
@@ -56,25 +66,21 @@ async function generateQuiz({
   - "options": an array of 4 options (for mcq only)
   - "answer": the correct answer.
   The distribution of question types should be: 
-  - ${Object.keys(type.distribution).map(key => `${key}: ${type.distribution[key]}`).join(', ')}`;
+  - ${Object.keys(type.distribution).map((key) => `${key}: ${type.distribution[key]}`).join(", ")}`;
 
-  const contents: any[] = [{ role: "user", parts: [{ text: basePrompt }] }];
+  const parts: any[] = [{ text: basePrompt }];
 
-  if (pdfBase64) {
-    contents[0].parts.push({
-      inlineData: {
-        mimeType: "application/pdf",
-        data: pdfBase64,
-      },
-    });
+  if (files) {
+    for (const file of files) {
+      parts.push(createPartFromUri(file.uri, file.mimeType));
+    }
   }
 
   const response = await client.models.generateContent({
     model: "gemini-2.5-flash",
-    contents,
+    contents: [{ role: "user", parts }],
     ...(text
       ? {
-          // For text, we can enforce JSON schema
           config: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -116,21 +122,30 @@ export async function POST(req: Request) {
     const contentType = req.headers.get("content-type") || "";
 
     if (contentType.includes("multipart/form-data")) {
-      // Handle PDF Upload
       const formData = await req.formData();
-      const file = formData.get("file") as File | null;
-      if (!file) {
-        return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-      }
-
-      const arrayBuffer = await file.arrayBuffer();
-      const base64PDF = Buffer.from(arrayBuffer).toString("base64");
+      const files = formData.getAll("files") as File[]; // "files" key for multiple
       const settings = formData.get("settings")?.toString() || "{}";
       const settingsJson = JSON.parse(settings);
-      const quiz = await generateQuiz({ pdfBase64: base64PDF, ...settingsJson });
+
+      if (!files || files.length === 0) {
+        return NextResponse.json({ error: "No files uploaded" }, { status: 400 });
+      }
+
+      const uploadedFiles: { uri: string; mimeType: string }[] = [];
+
+      for (const file of files) {
+        const buffer = await file.arrayBuffer();
+        const blob = new Blob([buffer], { type: "application/pdf" });
+        const uploaded = await uploadAndWait(blob, file.name);
+        if (uploaded.uri && uploaded.mimeType) {
+          uploadedFiles.push({ uri: uploaded.uri, mimeType: uploaded.mimeType });
+        }
+      }
+
+      const quiz = await generateQuiz({ files: uploadedFiles, ...settingsJson });
       return NextResponse.json({ quiz });
     } else {
-      // Handle Text Input
+      // Handle JSON text input
       const { text, settings } = await req.json();
       const quiz = await generateQuiz({ text, ...settings });
       return NextResponse.json({ quiz });

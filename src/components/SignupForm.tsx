@@ -13,12 +13,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/components/AuthProvider"
+import { useRouter } from "next/navigation"
 
 export default function SignUpForm({
   onToggleForm,
   className,
   ...props
 }: React.ComponentPropsWithRef<"div"> & { onToggleForm: () => void }) {
+    const router = useRouter()
     const { supabase } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -39,10 +41,7 @@ export default function SignUpForm({
       setError(error.message)
     } else {
       const { data: { session } } = await supabase.auth.getSession()
-      // Update the session state here
-      // For example, you can use the useAuth hook to update the session state
-      // const { updateSession } = useAuth()
-      // updateSession(session)
+      router.push("/")
     }
   
     setLoading(false)

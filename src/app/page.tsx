@@ -1,15 +1,24 @@
 "use client";
+
+import { useState } from "react";
 import QuizPreview from "../components/QuizPreview";
 import UploadForm from "../components/UploadForm";
 import Spinner from "@/components/Spinner";
 import QuizSettings from "../components/QuizSettings";
-import { useState } from "react";
+
+// Type definition for a quiz question
+type QuizQuestion = {
+  type: "mcq" | "fill" | "truefalse" | "shortanswer" | "essay";
+  question: string;
+  options?: string[];
+  answer: string;
+};
 
 export default function Home() {
   // State variables
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(false);
-  const [quizSettings, useQuizSettings] = useState({
+  const [quizSettings, setQuizSettings] = useState({
     difficulty: "medium",
     numQuestions: 5,
     type: {
@@ -24,62 +33,45 @@ export default function Home() {
     },
   });
 
-  // Type definition for a quiz question
-  type QuizQuestion = {
-    type: "mcq" | "fill" | "truefalse"| "shortanswer" | "essay";
-    question: string;
-    options?: string[];
-    answer: string;
-  };
-
   // Function to handle text submission
   const handleTextSubmit = async (text: string) => {
-    // Clear the quiz questions and set loading to true
     setQuizQuestions([]);
     setLoading(true);
     try {
-      // Call the API to generate the quiz
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, settings: quizSettings }),
       });
-      // Get the quiz questions from the response
+
       const data = await res.json();
       setQuizQuestions(data.quiz);
     } catch (err) {
-      // Catch any errors and log them
       console.error(err);
     } finally {
-      // Set loading to false when done
       setLoading(false);
     }
   };
 
-  // Function to handle PDF uploads
-  const handlePdfUpload = async (file: File) => {
-    // Clear the quiz questions and set loading to true
+  // ✅ Function to handle multiple PDF uploads
+  const handlePdfUpload = async (files: File[]) => {
     setQuizQuestions([]);
     setLoading(true);
     try {
-      // Create a form data object and add the file to it
       const formData = new FormData();
-      formData.append("file", file);
+      files.forEach((file) => formData.append("files", file));
       formData.append("settings", JSON.stringify(quizSettings));
 
-      // Call the API to generate the quiz
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
         body: formData,
       });
-      // Get the quiz questions from the response
+
       const data = await res.json();
       setQuizQuestions(data.quiz);
     } catch (err) {
-      // Catch any errors and log them
       console.error(err);
     } finally {
-      // Set loading to false when done
       setLoading(false);
     }
   };
@@ -87,13 +79,27 @@ export default function Home() {
   // Render the page
   return (
     <main className="min-h-screen">
-        <div className="flex flex-col justify-items-center max-w-2/3 mx-auto gap-4">
+      <div className="flex flex-col justify-items-center max-w-2/3 mx-auto gap-4">
         <h1 className="text-2xl font-bold">🧠 AI Quiz Generator</h1>
-        <UploadForm onTextSubmit={handleTextSubmit} onPdfUpload={handlePdfUpload} />
-        <QuizSettings quizSettings={quizSettings} setQuizSettings={useQuizSettings} />
+        <UploadForm
+          onTextSubmit={handleTextSubmit}
+          onPdfUpload={handlePdfUpload} // now expects multiple files
+        />
+        <QuizSettings
+          quizSettings={quizSettings}
+          setQuizSettings={setQuizSettings}
+        />
         <hr className="my-6" />
-        {loading ? <div className="flex justify-center items-center"><Spinner /></div> : quizQuestions.length > 0 && <QuizPreview questions={Array.isArray(quizQuestions) ? quizQuestions : []} />}
-        </div>
+        {loading ? (
+          <div className="flex justify-center items-center">
+            <Spinner />
+          </div>
+        ) : quizQuestions.length > 0 ? (
+          <QuizPreview
+            questions={Array.isArray(quizQuestions) ? quizQuestions : []}
+          />
+        ) : null}
+      </div>
     </main>
   );
 }
