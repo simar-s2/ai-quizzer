@@ -1,6 +1,7 @@
 import Difficulty from './quizsettingscomponents/Difficulty';
 import NumQuestions from './quizsettingscomponents/NumQuestions';
 import QuestionTypes from './quizsettingscomponents/QuestionTypes';
+import Topic from './quizsettingscomponents/topic';
 
 const QuizSettings = ({ quizSettings, setQuizSettings }: {
   quizSettings: any;
@@ -13,6 +14,7 @@ const QuizSettings = ({ quizSettings, setQuizSettings }: {
                 <Difficulty quizSettings={quizSettings} setQuizSettings={setQuizSettings} />
                 <NumQuestions quizSettings={quizSettings} setQuizSettings={setQuizSettings} />
                 <QuestionTypes quizSettings={quizSettings} setQuizSettings={setQuizSettings}/>
+                <Topic quizSettings={quizSettings} setQuizSettings={setQuizSettings} />
             </div>
         </div>
   );

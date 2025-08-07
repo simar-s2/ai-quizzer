@@ -12,6 +12,7 @@ type QuizQuestion = {
   question: string;
   options?: string[];
   answer: string;
+  topic: string;
 };
 
 export default function Home() {
@@ -31,6 +32,7 @@ export default function Home() {
         essay: 0,
       },
     },
+    topic: "",
   });
 
   // Function to handle text submission

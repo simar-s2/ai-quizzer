@@ -44,6 +44,7 @@ async function generateQuiz({
   difficulty = "medium",
   numQuestions = 5,
   type = { selectedTypes: [], distribution: {} },
+  topic = "",
 }: {
   files?: { uri: string; mimeType: string }[];
   text?: string;
@@ -53,8 +54,9 @@ async function generateQuiz({
     selectedTypes: string[];
     distribution: Record<string, number>;
   };
+  topic?: string;
 }) {
-  const basePrompt = `Generate ${numQuestions} ${difficulty}-level quiz questions based on the ${
+  const basePrompt = `Generate ${numQuestions} ${difficulty}-level quiz ${topic} questions based on the ${
     files ? "uploaded PDF documents" : "following text"
   }:
   ${text ? `"${text}"` : ""}
@@ -66,6 +68,7 @@ async function generateQuiz({
   - "options": an array of 4 options (for mcq only)
   - "answer": the correct answer.
   The distribution of question types should be: 
+  - Equally split or if there is a distribution:
   - ${Object.keys(type.distribution).map((key) => `${key}: ${type.distribution[key]}`).join(", ")}`;
 
   const parts: any[] = [{ text: basePrompt }];
