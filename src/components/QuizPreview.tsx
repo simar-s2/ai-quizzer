@@ -12,48 +12,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "./ui/badge";
 import clsx from "clsx";
+import type { QuizQuestion } from "@/app/page"; // Adjust path to match where you moved QuizQuestion
 
-/* ----------------------------- Types & helpers ----------------------------- */
+/* ----------------------------- Helpers ----------------------------- */
 
+// If you still want to use WithMeta separately elsewhere, you can keep it
 type WithMeta = {
   explanation?: string;
   concepts?: string[];
 };
 
-type MCQ = {
-  type: "mcq";
-  question: string;
-  options: string[];
-  answer: string;
-} & WithMeta;
-
-type TrueFalse = {
-  type: "truefalse";
-  question: string;
-  answer: "True" | "False";
-} & WithMeta;
-
-type Fill = {
-  type: "fill";
-  question: string;
-  answer: string;
-} & WithMeta;
-
-type FreeText = {
-  type: "shortanswer" | "essay";
-  question: string;
-} & WithMeta;
-
-type Question = MCQ | TrueFalse | Fill | FreeText;
-
+// Define valid marking labels if you need them elsewhere
 type Mark = "correct" | "incorrect" | "manual" | "unknown";
 
 const TRUE_FALSE_OPTIONS = ["True", "False"] as const;
 
+// Helper function to normalize strings
 const normalize = (s?: string) => s?.trim().toLowerCase() ?? "";
 
-const isAutoMarkable = (q: Question): q is MCQ | TrueFalse | Fill =>
+// Use type narrowing based on the `type` field of `QuizQuestion`
+const isAutoMarkable = (q: QuizQuestion) =>
   q.type === "mcq" || q.type === "truefalse" || q.type === "fill";
+
 
 /* --------------------------------- Choice --------------------------------- */
 
@@ -218,7 +198,7 @@ function ResultPanel({
 
 /* ------------------------------- Main component --------------------------- */
 
-export default function QuizPreview({ questions }: { questions: Question[] }) {
+export default function QuizPreview({ questions }: { questions: QuizQuestion[] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState<Record<number, string>>({});
   const [results, setResults] = useState<Record<number, Mark>>({});
@@ -335,8 +315,8 @@ export default function QuizPreview({ questions }: { questions: Question[] }) {
           <ResultPanel
             mark={results[currentIndex]!}
             correctAnswer={"answer" in currentQuestion ? currentQuestion.answer : undefined}
-            explanation={currentQuestion.explanation}
-            concepts={currentQuestion.concepts}
+            // explanation={currentQuestion.explanation}
+            // concepts={currentQuestion.concepts}
           />
         )}
       </CardContent>

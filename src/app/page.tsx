@@ -5,10 +5,9 @@ import QuizPreview from "../components/QuizPreview";
 import UploadForm from "../components/UploadForm";
 import Spinner from "@/components/Spinner";
 import QuizSettings from "../components/QuizSettings";
-import { generateMockQuiz } from "../lib/generateMockQuiz";
 
 // Type definition for a quiz question
-type QuizQuestion = {
+export type QuizQuestion = {
   type: "mcq" | "fill" | "truefalse" | "shortanswer" | "essay";
   question: string;
   options?: string[];
@@ -17,7 +16,6 @@ type QuizQuestion = {
 };
 
 export default function Home() {
-  const questions = generateMockQuiz('');
   // State variables
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,7 +32,6 @@ export default function Home() {
         essay: 0,
       },
     },
-    topic: "",
   });
 
   // Function to handle text submission
@@ -98,10 +95,8 @@ export default function Home() {
           <div className="flex justify-center items-center">
             <Spinner />
           </div>
-        ) : questions.length > 0 ? (
-          <QuizPreview
-          questions={questions}
-          />
+        ) : quizQuestions.length > 0 ? (
+          <QuizPreview questions={Array.isArray(quizQuestions) ? quizQuestions : []}/>
         ) : null}
       </div>
     </main>
