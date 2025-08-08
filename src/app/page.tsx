@@ -5,6 +5,7 @@ import QuizPreview from "../components/QuizPreview";
 import UploadForm from "../components/UploadForm";
 import Spinner from "@/components/Spinner";
 import QuizSettings from "../components/QuizSettings";
+import { generateMockQuiz } from "../lib/generateMockQuiz";
 
 // Type definition for a quiz question
 type QuizQuestion = {
@@ -16,6 +17,7 @@ type QuizQuestion = {
 };
 
 export default function Home() {
+  const questions = generateMockQuiz('');
   // State variables
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,7 +84,7 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       <div className="flex flex-col justify-items-center max-w-2/3 mx-auto gap-4">
-        <h1 className="text-2xl font-bold">🧠 AI Quiz Generator</h1>
+        <h1>🧠 AI Quiz Generator</h1>
         <UploadForm
           onTextSubmit={handleTextSubmit}
           onPdfUpload={handlePdfUpload} // now expects multiple files
@@ -96,9 +98,9 @@ export default function Home() {
           <div className="flex justify-center items-center">
             <Spinner />
           </div>
-        ) : quizQuestions.length > 0 ? (
+        ) : questions.length > 0 ? (
           <QuizPreview
-            questions={Array.isArray(quizQuestions) ? quizQuestions : []}
+          questions={questions}
           />
         ) : null}
       </div>
