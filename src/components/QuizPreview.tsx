@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "./ui/badge";
 import clsx from "clsx";
-import type { QuizQuestion } from "@/app/page"; // Adjust path to match where you moved QuizQuestion
+import type { QuizQuestion } from "@/app/types"; // Adjust path to match where you moved QuizQuestion
 
 /* ----------------------------- Helpers ----------------------------- */
 

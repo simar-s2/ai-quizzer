@@ -19,7 +19,7 @@ const Navbar = () => {
   if (loading) return null;
   
   else return (
-    <nav className="h-16 border-b sticky z-50 top-0 bg-white">
+    <nav className="h-16 sticky z-50 top-0 bg-gradient-to-r from-white via-slate-50 to-white shadow-sm border-b">
       <div className="h-full flex items-center justify-between px-4">
         <div className="flex items-center gap-8">
           <Logo />
