@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Navbar from "../components/navbar/navbar";
-import AuthProvider from '@/components/AuthProvider';
+import Navbar from "../components/navbar";
+import AuthProvider from "@/components/AuthProvider";
+import { ThemeProvider } from "next-themes"; // 👈 Import ThemeProvider
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,24 +11,26 @@ export const metadata: Metadata = {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="h-screen flex flex-col">
-        <AuthProvider>
-        {/* Top navbar */}
-        <div className="h-16">
-          <Navbar/>
-        </div>
-        
-        {/* Main layout: sidebar + main content */}
-        <div className="flex flex-1 overflow-hidden">
-          
-          {/* Main content: takes rest of space, scrollable */}
-          <main className="flex-1 overflow-y-auto p-4">
-            {children}
-          </main>
-        </div>
-        </AuthProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem> {/* 👈 Wrap body content */}
+          <AuthProvider>
+            {/* Top navbar */}
+            <div className="h-16">
+              <Navbar />
+            </div>
+
+            {/* Main layout: sidebar + main content */}
+            <div className="flex flex-1 overflow-hidden">
+              {/* Main content: takes rest of space, scrollable */}
+              <main className="flex-1 overflow-y-auto p-4">
+                {children}
+              </main>
+            </div>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
 }
+
