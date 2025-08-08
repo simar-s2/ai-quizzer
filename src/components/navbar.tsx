@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList } from "@/components/ui/navigation-menu"
-import { Menu, SunIcon, LogOutIcon, UserIcon } from "lucide-react"
+import { Menu, LogOutIcon, UserIcon } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/components/AuthProvider"
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -66,12 +66,20 @@ export default function Navbar() {
             </SheetTrigger>
             <SheetContent>
               <nav className="mt-6 space-y-4">
-                <Link href="/" className="block hover:text-emerald-600">Home</Link>
-                {session && <Link href="/dashboard" className="block hover:text-emerald-600">Dashboard</Link>}
+                <Link href="/" className="block">Home</Link>
+                {session && <Link href="/dashboard" className="block">Dashboard</Link>}
                 {!session ? (
-                  <Link href="/auth" className="block hover:text-emerald-600">Login</Link>
+                  <Link href="/auth">
+                    <Button variant="outline" >
+                      <UserIcon className="h-4 w-4 mr-2" />
+                      Login
+                    </Button>
+                  </Link>
                 ) : (
-                  <button onClick={handleLogout} className="block text-left hover:text-red-600">Logout</button>
+                  <Button variant="outline"  onClick={handleLogout}>
+                    <LogOutIcon className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
                 )}
               </nav>
             </SheetContent>

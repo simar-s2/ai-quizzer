@@ -67,7 +67,7 @@ const Type = ({ quizSettings, setQuizSettings }: typeProps) => {
   };
 
   return (
-    <Card className="flex p-4">
+    <Card className="p-4 bg-card text-card-foreground space-y-3">
       <Label>Question Types</Label>
 
       <div className="flex items-center space-x-2">

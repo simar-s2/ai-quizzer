@@ -4,7 +4,7 @@ import { useState } from "react";
 import QuizPreview from "@/components/QuizPreview";
 import Spinner from "@/components/Spinner";
 import QuizSettings from "@/components/QuizSettings";
-import type { QuizQuestion } from "@/app/types";
+import type QuizQuestion from "@/app/types";
 
 import {
   Card,
@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils"; // optional helper if you have it
+import { exportQuizQuestions, exportQuizMarkscheme } from '../app/quizExport';
 
 export default function Home() {
   // State
@@ -245,8 +246,12 @@ export default function Home() {
               {/* Optional: Actions */}
               {quizQuestions.length > 0 && (
                 <div className="flex gap-2">
-                  <Button variant="outline">Export as PDF</Button>
-                  <Button variant="outline">Export JSON</Button>
+                  <Button variant="outline" onClick={() => exportQuizQuestions(quizQuestions)}>
+                    Export Quiz
+                  </Button>
+                  <Button variant="outline" onClick={() => exportQuizMarkscheme(quizQuestions)}>
+                    Export Markscheme
+                  </Button>
                   <Button>Start quiz</Button>
                 </div>
               )}

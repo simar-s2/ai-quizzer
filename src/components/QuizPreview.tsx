@@ -12,7 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "./ui/badge";
 import clsx from "clsx";
-import type { QuizQuestion } from "@/app/types"; // Adjust path to match where you moved QuizQuestion
+import type QuizQuestion  from "@/app/types"; // Adjust path to match where you moved QuizQuestion
+
+
 
 /* ----------------------------- Helpers ----------------------------- */
 
@@ -204,7 +206,6 @@ export default function QuizPreview({ questions }: { questions: QuizQuestion[] }
   const [results, setResults] = useState<Record<number, Mark>>({});
 
   const currentQuestion = questions[currentIndex];
-
   const isMarked = results[currentIndex] !== undefined;
   const normalizedCorrect = "answer" in currentQuestion ? normalize(currentQuestion.answer) : "";
 

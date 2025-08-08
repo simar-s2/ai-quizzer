@@ -18,13 +18,13 @@ const Topic = ({
     };
   
     return (
-      <Card className="p-4">
-        <Label htmlFor="topic" className="block font-semibold">
-          Topic
-        </Label>
-        <Input type="email" placeholder="Topic"
-         onChange={(e) => handleChange(e.target.value)} 
-         maxLength={50}/>
+      <Card className="p-4 bg-card text-card-foreground space-y-3">
+        <Input
+          type="text"
+          placeholder="E.g. Biology, History, Python basics..."
+          className="w-full rounded-md"
+          maxLength={50}
+        />
       </Card>
     );
   };

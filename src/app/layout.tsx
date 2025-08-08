@@ -13,20 +13,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="h-screen flex flex-col">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem> {/* 👈 Wrap body content */}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             {/* Top navbar */}
             <div className="h-16">
               <Navbar />
             </div>
 
-            {/* Main layout: sidebar + main content */}
-            <div className="flex flex-1 overflow-hidden">
               {/* Main content: takes rest of space, scrollable */}
               <main className="flex-1 overflow-y-auto p-4">
                 {children}
               </main>
-            </div>
           </AuthProvider>
         </ThemeProvider>
       </body>

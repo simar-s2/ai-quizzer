@@ -22,7 +22,7 @@ const Difficulty = ({
     };
   
     return (
-      <Card className="p-4">
+      <Card className="p-4 bg-card text-card-foreground space-y-3">
         <Label htmlFor="difficulty" className="block font-semibold">
           Difficulty
         </Label>
