@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Navbar from "../components/navbar";
 import AuthProvider from "@/components/AuthProvider";
-import { ThemeProvider } from "next-themes"; // 👈 Import ThemeProvider
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -15,19 +16,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <body className="h-screen flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
+            {/* Sonner Toaster – put it once at the root */}
+            <Toaster richColors closeButton />
+
             {/* Top navbar */}
             <div className="h-16">
               <Navbar />
             </div>
 
-              {/* Main content: takes rest of space, scrollable */}
-              <main className="flex-1 overflow-y-auto p-4">
-                {children}
-              </main>
+            {/* Main content: takes rest of space, scrollable */}
+            <main className="flex-1 overflow-y-auto p-4">
+              {children}
+            </main>
           </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
   );
 }
+
 

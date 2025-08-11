@@ -1,7 +1,8 @@
 import { jsPDF } from "jspdf";
-import type QuizQuestion from "@/app/types";
+import type { QuizQuestion } from "@/app/types";
+import type { QuizMetadata } from "@/app/types";
 
-export function exportQuizQuestions(questions: QuizQuestion[], filename = "Quiz_Questions.pdf") {
+export function exportQuizQuestions(questions: QuizQuestion[], metadata = {} as QuizMetadata, filename = `${metadata.name}.pdf`) {
   const doc = new jsPDF();
   const margin = 20;
   const maxWidth = 140;
@@ -11,11 +12,13 @@ export function exportQuizQuestions(questions: QuizQuestion[], filename = "Quiz_
 
   doc.setFont("Arial", "bold");
   doc.setFontSize(14);
-  doc.text("Quiz Paper", margin, y);
-  y += 12;
-
+  doc.text(metadata.name, margin, y);
+  y += lineHeight;
   doc.setFontSize(11);
   doc.setFont("Arial", "normal");
+  const descriptionLines = doc.splitTextToSize(metadata.description, maxWidth);
+  doc.text(descriptionLines, margin, y);
+  y += descriptionLines.length * lineHeight + 4;
 
   questions.forEach((q, i) => {
     if (y > 270) {
@@ -37,7 +40,7 @@ export function exportQuizQuestions(questions: QuizQuestion[], filename = "Quiz_
     // Render options or answer space
     if (q.options && q.options.length > 0) {
       q.options.forEach((opt, idx) => {
-        doc.text(`   ${String.fromCharCode(65 + idx)}) ${opt}`, margin + 4, y);
+        doc.text(`   ${opt}`, margin + 4, y);
         y += lineHeight;
       });
     } else if (q.type === "truefalse") {
@@ -71,7 +74,7 @@ export function exportQuizQuestions(questions: QuizQuestion[], filename = "Quiz_
   doc.save(filename);
 }
 
-export function exportQuizMarkscheme(questions: QuizQuestion[], filename = "Quiz_MarkScheme.pdf") {
+export function exportQuizMarkscheme(questions: QuizQuestion[], metadata = {} as QuizMetadata, filename = `${metadata.name} markscheme.pdf`) {
   const doc = new jsPDF();
   const margin = 20;
   const maxWidth = 140;

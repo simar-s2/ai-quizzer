@@ -4,7 +4,8 @@ import { useState } from "react";
 import QuizPreview from "@/components/QuizPreview";
 import Spinner from "@/components/Spinner";
 import QuizSettings from "@/components/QuizSettings";
-import type QuizQuestion from "@/app/types";
+import type { QuizQuestion } from "@/app/types";
+import type { QuizMetadata } from "@/app/types";
 
 import {
   Card,
@@ -26,6 +27,7 @@ import { exportQuizQuestions, exportQuizMarkscheme } from '../app/quizExport';
 export default function Home() {
   // State
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [quizMetadata, setQuizMetadata] = useState<QuizMetadata | null>(null);
   const [loading, setLoading] = useState(false);
   const [quizSettings, setQuizSettings] = useState({
     difficulty: "medium",
@@ -41,6 +43,7 @@ export default function Home() {
       },
     },
   });
+  
 
   // Local form state
   const [rawText, setRawText] = useState("");
@@ -48,43 +51,50 @@ export default function Home() {
 
   // Actions
   const handleTextSubmit = async () => {
-    if (!rawText.trim()) return;
-    setQuizQuestions([]);
-    setLoading(true);
+    if (!rawText.trim()) return
+    setQuizQuestions([])
+    setQuizMetadata(null)
+    setLoading(true)
+  
     try {
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: rawText, settings: quizSettings }),
-      });
-      const data = await res.json();
-      setQuizQuestions(Array.isArray(data.quiz) ? data.quiz : []);
+      })
+      const data = await res.json()
+  
+      setQuizQuestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
+      setQuizMetadata(data.quiz.metadata ? data.quiz.metadata : {})
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   };
-
+  
   const handlePdfUpload = async () => {
-    if (!files.length) return;
-    setQuizQuestions([]);
-    setLoading(true);
+    if (!files.length) return
+    setQuizQuestions([])
+    setQuizMetadata(null)
+    setLoading(true)
+  
     try {
-      const formData = new FormData();
-      files.forEach((file) => formData.append("files", file));
-      formData.append("settings", JSON.stringify(quizSettings));
-
+      const formData = new FormData()
+      files.forEach((file) => formData.append("files", file))
+      formData.append("settings", JSON.stringify(quizSettings))
+  
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
         body: formData,
-      });
-      const data = await res.json();
-      setQuizQuestions(Array.isArray(data.quiz) ? data.quiz : []);
+      })
+      const data = await res.json()
+      setQuizQuestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
+      setQuizMetadata(data.quiz.metadata ? data.quiz.metadata : {})
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   };
 
@@ -235,8 +245,8 @@ export default function Home() {
                     <div className="flex items-center justify-center py-12">
                       <Spinner />
                     </div>
-                  ) : quizQuestions.length > 0 ? (
-                    <QuizPreview questions={quizQuestions} />
+                  ) : quizQuestions.length > 0 && quizMetadata !== null ? (
+                    <QuizPreview questions={quizQuestions} metadata={quizMetadata} />
                   ) : (
                     <EmptyPreviewState />
                   )}
@@ -246,10 +256,10 @@ export default function Home() {
               {/* Optional: Actions */}
               {quizQuestions.length > 0 && (
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => exportQuizQuestions(quizQuestions)}>
+                  <Button variant="outline" onClick={() => exportQuizQuestions(quizQuestions, quizMetadata ?? undefined)}>
                     Export Quiz
                   </Button>
-                  <Button variant="outline" onClick={() => exportQuizMarkscheme(quizQuestions)}>
+                  <Button variant="outline" onClick={() => exportQuizMarkscheme(quizQuestions, quizMetadata ?? undefined)}>
                     Export Markscheme
                   </Button>
                   <Button>Start quiz</Button>

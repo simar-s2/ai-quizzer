@@ -1,18 +1,36 @@
-import { useState } from "react";
+"use client";
+
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-interface typeProps {
-  quizSettings: any;
-  setQuizSettings: React.Dispatch<React.SetStateAction<any>>;
+interface QuizSettings {
+  numQuestions: number;
+  type?: {
+    selectedTypes?: string[];
+    distribution?: Record<string, number>;
+  };
 }
 
-const QUESTION_TYPES = ["True/False", "Fill in the Blank", "Multiple Choice", "Short Answer", "Essay"];
+interface TypeProps {
+  quizSettings: QuizSettings;
+  setQuizSettings: React.Dispatch<React.SetStateAction<QuizSettings>>;
+}
 
-const typeKeyMap: Record<string, string> = {
+const QUESTION_TYPES = [
+  "True/False",
+  "Fill in the Blank",
+  "Multiple Choice",
+  "Short Answer",
+  "Essay",
+] as const;
+
+const typeKeyMap: Record<(typeof QUESTION_TYPES)[number], string> = {
   "True/False": "truefalse",
   "Fill in the Blank": "fill",
   "Multiple Choice": "mcq",
@@ -20,50 +38,56 @@ const typeKeyMap: Record<string, string> = {
   "Essay": "essay",
 };
 
-const Type = ({ quizSettings, setQuizSettings }: typeProps) => {
+export default function Type({ quizSettings, setQuizSettings }: TypeProps) {
   const [customDistribution, setCustomDistribution] = useState(false);
 
-  const handleTypeToggle = (type: string) => {
-    const updatedTypes = quizSettings.type?.selectedTypes || [];
+  const selectedTypes = quizSettings.type?.selectedTypes ?? [];
+  const distribution = quizSettings.type?.distribution ?? {};
+  const totalQuestions = quizSettings.numQuestions;
 
-    const newTypes = updatedTypes.includes(typeKeyMap[type])
-      ? updatedTypes.filter((t: string) => t !== typeKeyMap[type])
-      : [...updatedTypes, typeKeyMap[type]];
+  const distributionTotal = useMemo(
+    () => Object.values(distribution).reduce((a, b) => a + (b || 0), 0),
+    [distribution]
+  );
 
-    setQuizSettings({
-      ...quizSettings,
+  const updateSettings = (changes: Partial<QuizSettings["type"]>) => {
+    setQuizSettings((prev) => ({
+      ...prev,
       type: {
-        ...quizSettings.type,
-        selectedTypes: newTypes,
+        selectedTypes: prev.type?.selectedTypes ?? [],
+        distribution: prev.type?.distribution ?? {},
+        ...changes,
       },
-    });
+    }));
   };
 
-  const handleDistributionChange = (type: string, value: string) => {
-    const key = typeKeyMap[type];
-    const count = Math.max(0, parseInt(value) || 0);
+  const toggleType = (key: string) => {
+    const next = selectedTypes.includes(key)
+      ? selectedTypes.filter((k) => k !== key)
+      : [...selectedTypes, key];
+    updateSettings({ selectedTypes: next });
+  };
 
-    const totalQuestions = quizSettings.numQuestions;
-    const newDistributionTotal = Object.values(quizSettings.type?.distribution as Record<string, number>)
-      .reduce((a, b) => a + b, 0)
-      - (quizSettings.type?.distribution as Record<string, number>)[key]
-      + count;
+  const changeDist = (key: string, count: number) => {
+    const prev = distribution[key] || 0;
+    const nextTotal = distributionTotal - prev + count;
 
-    if (newDistributionTotal > totalQuestions) {
-      alert("The total number of questions cannot exceed the maximum allowed.");
+    if (nextTotal > totalQuestions) {
+      toast("The total number of questions cannot exceed the maximum allowed.", {
+        description: `You’ve allocated ${distributionTotal} of ${totalQuestions}.`,
+        action: { label: "Got it", onClick: () => {} },
+      });
       return;
     }
 
-    setQuizSettings({
-      ...quizSettings,
-      type: {
-        ...quizSettings.type,
-        distribution: {
-          ...quizSettings.type?.distribution,
-          [key]: count,
-        },
-      },
-    });
+    updateSettings({ distribution: { ...distribution, [key]: count } });
+  };
+
+  const onToggleCustom = () => {
+    const next = !customDistribution;
+    setCustomDistribution(next);
+    // clear distribution whenever toggling
+    updateSettings({ distribution: {} });
   };
 
   return (
@@ -74,7 +98,7 @@ const Type = ({ quizSettings, setQuizSettings }: typeProps) => {
         <Checkbox
           id="customDistribution"
           checked={customDistribution}
-          onCheckedChange={() => setCustomDistribution(!customDistribution)}
+          onCheckedChange={onToggleCustom}
         />
         <Label htmlFor="customDistribution">
           Customize number of each type
@@ -83,30 +107,36 @@ const Type = ({ quizSettings, setQuizSettings }: typeProps) => {
 
       {customDistribution ? (
         <div className="grid grid-cols-1 gap-3">
-          {QUESTION_TYPES.map((type) => (
-            <div key={type} className="flex items-center justify-between">
-              <Label>{type}</Label>
-              <Input
-                type="number"
-                min={0}
-                className="w-24"
-                value={quizSettings.type?.distribution?.[typeKeyMap[type]] || ""}
-                onChange={(e) => handleDistributionChange(type, e.target.value)}
-              />
-            </div>
-          ))}
+          {QUESTION_TYPES.map((label) => {
+            const key = typeKeyMap[label];
+            return (
+              <div key={key} className="flex items-center justify-between">
+                <Label>{label}</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  className="w-24"
+                  value={distribution[key] ?? ""}
+                  onChange={(e) =>
+                    changeDist(key, Math.max(0, parseInt(e.target.value) || 0))
+                  }
+                />
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {QUESTION_TYPES.map((type) => {
-            const isSelected = quizSettings.type?.selectedTypes?.includes(typeKeyMap[type]);
+          {QUESTION_TYPES.map((label) => {
+            const key = typeKeyMap[label];
+            const isSelected = selectedTypes.includes(key);
             return (
               <Button
                 variant={isSelected ? "default" : "secondary"}
-                key={type}
-                onClick={() => handleTypeToggle(type)}
+                key={key}
+                onClick={() => toggleType(key)}
               >
-                {type}
+                {label}
               </Button>
             );
           })}
@@ -114,7 +144,4 @@ const Type = ({ quizSettings, setQuizSettings }: typeProps) => {
       )}
     </Card>
   );
-};
-
-export default Type;
-
+}

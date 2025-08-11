@@ -12,17 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "./ui/badge";
 import clsx from "clsx";
-import type QuizQuestion  from "@/app/types"; // Adjust path to match where you moved QuizQuestion
-
+import type {QuizQuestion}  from "@/app/types"; 
+import type { QuizMetadata } from "@/app/types";
 
 
 /* ----------------------------- Helpers ----------------------------- */
-
-// If you still want to use WithMeta separately elsewhere, you can keep it
-type WithMeta = {
-  explanation?: string;
-  concepts?: string[];
-};
 
 // Define valid marking labels if you need them elsewhere
 type Mark = "correct" | "incorrect" | "manual" | "unknown";
@@ -35,7 +29,6 @@ const normalize = (s?: string) => s?.trim().toLowerCase() ?? "";
 // Use type narrowing based on the `type` field of `QuizQuestion`
 const isAutoMarkable = (q: QuizQuestion) =>
   q.type === "mcq" || q.type === "truefalse" || q.type === "fill";
-
 
 /* --------------------------------- Choice --------------------------------- */
 
@@ -167,15 +160,11 @@ function ResultPanel({
 
         <div className="flex-1">
           <div className="font-medium mb-2">{title}</div>
-
-          {/* Prefer explanation if provided, else show the correct answer nicely */}
-          {explanation ? (
-            <p className="text-gray-700 text-sm">{explanation}</p>
-          ) : correctAnswer ? (
-            <div className="text-sm text-gray-700">
-              {correctAnswer}
-            </div>
-          ) : null}
+            <p className="text-sm text-gray-700">
+              
+            </p>
+            <p className="text-gray-700 text-sm">Answer: {correctAnswer}. {explanation}</p>
+            
 
           {!!concepts?.length && (
             <div className="mt-3">
@@ -200,7 +189,8 @@ function ResultPanel({
 
 /* ------------------------------- Main component --------------------------- */
 
-export default function QuizPreview({ questions }: { questions: QuizQuestion[] }) {
+export default function QuizPreview({ questions , metadata }: 
+  { questions: QuizQuestion[], metadata: QuizMetadata }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState<Record<number, string>>({});
   const [results, setResults] = useState<Record<number, Mark>>({});
@@ -277,7 +267,8 @@ export default function QuizPreview({ questions }: { questions: QuizQuestion[] }
   return (
     <Card>
       <CardHeader>
-        <h3>📋 Multi-Format Quiz Preview</h3>
+        <h3>{metadata.name}</h3>
+        <p>{metadata.description}</p>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -316,8 +307,7 @@ export default function QuizPreview({ questions }: { questions: QuizQuestion[] }
           <ResultPanel
             mark={results[currentIndex]!}
             correctAnswer={"answer" in currentQuestion ? currentQuestion.answer : undefined}
-            // explanation={currentQuestion.explanation}
-            // concepts={currentQuestion.concepts}
+            explanation={currentQuestion.explanation}
           />
         )}
       </CardContent>

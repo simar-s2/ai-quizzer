@@ -8,10 +8,10 @@ const client = new GoogleGenAI({
 // Helper to clean Gemini's response
 function cleanGeminiResponse(text: string): string {
   let cleaned = text.replace(/```json/gi, "").replace(/```/g, "").trim();
-  const firstBracket = cleaned.indexOf("[");
-  const lastBracket = cleaned.lastIndexOf("]");
-  if (firstBracket !== -1 && lastBracket !== -1) {
-    cleaned = cleaned.slice(firstBracket, lastBracket + 1);
+  const first = cleaned.indexOf("{");
+  const last = cleaned.lastIndexOf("}");
+  if (first !== -1 && last !== -1) {
+    cleaned = cleaned.slice(first, last + 1);
   }
   return cleaned;
 }
@@ -56,20 +56,29 @@ async function generateQuiz({
   };
   topic?: string;
 }) {
+  const distributionText =
+    Object.keys(type.distribution).length > 0
+      ? Object.entries(type.distribution)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(", ")
+      : "evenly distributed";
+      
   const basePrompt = `Generate ${numQuestions} ${difficulty}-level quiz ${topic} questions based on the ${
     files ? "uploaded PDF documents" : "following text"
   }:
-  ${text ? `"${text}"` : ""}
-  Return the result strictly as a JSON array. Do not add any explanations or text outside the JSON.
-  
+  ${text ? `"${text}"` : ""}.
   Each quiz question should have:
   - "type": ${type.selectedTypes.join(", ")}
   - "question": the question text
   - "options": an array of 4 options (for mcq only)
   - "answer": the correct answer.
-  The distribution of question types should be: 
-  - Equally split or if there is a distribution:
-  - ${Object.keys(type.distribution).map((key) => `${key}: ${type.distribution[key]}`).join(", ")}`;
+  - "explanation": explanation for the correct answer.
+  The distribution of question types should be: ${distributionText} with the following types: ${type.selectedTypes.join(", ")}.
+  Return exactly a JSON object with:
+  - "metadata": { name, description, subject, gradeLevel, tags }
+  - "questions": [ { type, question, options, answer, explanation } ]
+  Do not include any text, markdown, or commentary outside that object.
+`;
 
   const parts: any[] = [{ text: basePrompt }];
 
@@ -82,42 +91,62 @@ async function generateQuiz({
   const response = await client.models.generateContent({
     model: "gemini-2.5-flash",
     contents: [{ role: "user", parts }],
-    ...(text
-      ? {
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  type: { type: Type.STRING },
-                  question: { type: Type.STRING },
-                  options: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                  },
-                  answer: { type: Type.STRING },
-                },
-                propertyOrdering: ["type", "question", "options", "answer"],
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          metadata: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING },
+              description: { type: Type.STRING },
+              subject: { type: Type.STRING },
+              gradeLevel: { type: Type.STRING },
+              tags: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
               },
             },
+            required: ["name", "description", "subject", "gradeLevel", "tags"],
           },
-        }
-      : {}),
+          questions: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                type: { type: Type.STRING },
+                question: { type: Type.STRING },
+                options: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                },
+                answer: { type: Type.STRING },
+                explanation: { type: Type.STRING },
+              },
+              required: ["type", "question", "answer", "explanation"],
+            },
+          },
+        },
+        required: ["metadata", "questions"],
+      },
+    },
   });
-
-  let quiz: any[] = [];
-  if (response.text && response.text.length > 0) {
-    const cleaned = cleanGeminiResponse(response.text);
-    try {
-      quiz = JSON.parse(cleaned);
-    } catch (e) {
-      console.error("Failed to parse Gemini response:", cleaned);
-    }
+  
+  const cleaned = cleanGeminiResponse(response.text || "");
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned) as {
+      metadata: { [k: string]: any };
+      questions: any[];
+    };
+  } catch (e) {
+    console.error("Failed to parse Gemini response:", cleaned, e);
+    // Fallback: empty object so your route still returns valid JSON
+    parsed = { metadata: null, questions: [] };
   }
 
-  return quiz;
+  return parsed;
 }
 
 export async function POST(req: Request) {

@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { toast } from "sonner";
 
 const NumQuestions = ({
   quizSettings,
@@ -20,7 +21,10 @@ const NumQuestions = ({
       }
     }, 0) as number;
         if (numQuestions < totalDistribution) {
-      alert("The total number of questions cannot be less than the sum of the distribution.");
+          toast("Question count too low for selected distribution.", {
+            description: `You’ve allocated ${totalDistribution} questions across types. Please increase the total to match or exceed the distribution.`,
+            action: { label: "Got it", onClick: () => {} },
+          });
       return;
     }
 
