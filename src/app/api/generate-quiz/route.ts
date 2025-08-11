@@ -63,24 +63,38 @@ async function generateQuiz({
           .join(", ")
       : "evenly distributed";
       
-  const basePrompt = `Generate ${numQuestions} ${difficulty}-level quiz ${topic} questions based on the ${
-    files ? "uploaded PDF documents" : "following text"
-  }:
-  ${text ? `"${text}"` : ""}.
-  Each quiz question should have:
-  - "type": ${type.selectedTypes.join(", ")}
-  - "question": the question text
-  - "options": an array of 4 options (for mcq only)
-  - "answer": the correct answer.
-  - "explanation": explanation for the correct answer.
-  The distribution of question types should be: ${distributionText} with the following types: ${type.selectedTypes.join(", ")}.
-  Return exactly a JSON object with:
-  - "metadata": { name, description, subject, gradeLevel, tags }
-  - "questions": [ { type, question, options, answer, explanation } ]
-  Do not include any text, markdown, or commentary outside that object.
-`;
-
-  const parts: any[] = [{ text: basePrompt }];
+      const basePrompt = `
+      You are an expert quiz creator. Produce exactly ${numQuestions} ${difficulty}-level quiz questions on the subject "${topic}" based on the ${files ? "uploaded PDF documents" : "following text"} below:
+      
+      ${text || "(no inline text provided)"}
+      
+      Use this distribution of question types: ${distributionText}.
+      Allow only these types: ${type.selectedTypes.join(", ")}.
+      
+      Respond with a single JSON object matching this schema exactly (no extra keys, no markdown, no commentary):
+      
+      {
+        "quiz": {
+          "title": "string",
+          "description": "string",
+          "subject": "string",
+          "tags": ["string"],
+          "difficulty": "easy" | "medium" | "hard" | "expert"
+        },
+        "questions": [
+          {
+            "type": "mcq" | "fill" | "truefalse" | "shortanswer" | "essay",
+            "question_text": "string",
+            "options": ["string"],
+            "answer": "string",
+            "explanation": "string"
+          }
+        ]
+      }
+      Output JSON only.
+      `.trim();
+      
+        const parts: any[] = [{ text: basePrompt }];
 
   if (files) {
     for (const file of files) {
@@ -96,27 +110,33 @@ async function generateQuiz({
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          metadata: {
+          quiz: {
             type: Type.OBJECT,
             properties: {
-              name: { type: Type.STRING },
+              title: { type: Type.STRING },
               description: { type: Type.STRING },
               subject: { type: Type.STRING },
-              gradeLevel: { type: Type.STRING },
               tags: {
                 type: Type.ARRAY,
                 items: { type: Type.STRING },
               },
+              difficulty: {
+                type: Type.STRING,
+                enum: ["easy", "medium", "hard", "expert"],
+              },
             },
-            required: ["name", "description", "subject", "gradeLevel", "tags"],
+            required: ["title", "description", "subject", "difficulty", "tags"],
           },
           questions: {
             type: Type.ARRAY,
             items: {
               type: Type.OBJECT,
               properties: {
-                type: { type: Type.STRING },
-                question: { type: Type.STRING },
+                type: {
+                  type: Type.STRING,
+                  enum: ["mcq", "fill", "truefalse", "shortanswer", "essay"],
+                },
+                question_text: { type: Type.STRING },
                 options: {
                   type: Type.ARRAY,
                   items: { type: Type.STRING },
@@ -124,14 +144,16 @@ async function generateQuiz({
                 answer: { type: Type.STRING },
                 explanation: { type: Type.STRING },
               },
-              required: ["type", "question", "answer", "explanation"],
+              required: ["type", "question_text", "answer", "explanation"],
             },
           },
         },
-        required: ["metadata", "questions"],
+        required: ["quiz", "questions"],
       },
     },
   });
+  
+  
   
   const cleaned = cleanGeminiResponse(response.text || "");
   let parsed;

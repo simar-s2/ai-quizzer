@@ -12,9 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "./ui/badge";
 import clsx from "clsx";
-import type {QuizQuestion}  from "@/app/types"; 
-import type { QuizMetadata } from "@/app/types";
-
+import type { QuizQuestion } from "@/app/types";
+import type { Quiz } from "@/app/types";
 
 /* ----------------------------- Helpers ----------------------------- */
 
@@ -40,7 +39,13 @@ type ChoiceProps = {
   onClick: () => void;
 };
 
-function Choice({ text, selected, isMarked, isCorrectChoice, onClick }: ChoiceProps) {
+function Choice({
+  text,
+  selected,
+  isMarked,
+  isCorrectChoice,
+  onClick,
+}: ChoiceProps) {
   const incorrect = isMarked && selected && !isCorrectChoice;
 
   return (
@@ -58,7 +63,8 @@ function Choice({ text, selected, isMarked, isCorrectChoice, onClick }: ChoicePr
       className={clsx(
         "p-4 border rounded-lg cursor-pointer transition-all duration-200 text-left outline-none",
         {
-          "bg-green-100 border-green-400 text-green-800": isMarked && isCorrectChoice,
+          "bg-green-100 border-green-400 text-green-800":
+            isMarked && isCorrectChoice,
           "bg-red-100 border-red-400 text-red-800": incorrect,
           "bg-gray-100 border-gray-400 text-gray-900": !isMarked && selected,
           "border-gray-200 text-gray-700": !isMarked && !selected,
@@ -106,7 +112,12 @@ function ResultPanel({
   return (
     <div className="mt-6 p-4 bg-gray-50 rounded-lg">
       <div className="flex items-start">
-        <div className={clsx("w-6 h-6 rounded-full flex items-center justify-center mr-3 mt-0.5", iconBg)}>
+        <div
+          className={clsx(
+            "w-6 h-6 rounded-full flex items-center justify-center mr-3 mt-0.5",
+            iconBg
+          )}
+        >
           {/* Circle check (green) or x (red) inline SVGs */}
           {isCorrect ? (
             <svg
@@ -160,15 +171,16 @@ function ResultPanel({
 
         <div className="flex-1">
           <div className="font-medium mb-2">{title}</div>
-            <p className="text-sm text-gray-700">
-              
-            </p>
-            <p className="text-gray-700 text-sm">Answer: {correctAnswer}. {explanation}</p>
-            
+          <p className="text-sm text-gray-700"></p>
+          <p className="text-gray-700 text-sm">
+            Answer: {correctAnswer}. {explanation}
+          </p>
 
           {!!concepts?.length && (
             <div className="mt-3">
-              <div className="text-xs font-medium text-gray-600 mb-1">Concepts covered:</div>
+              <div className="text-xs font-medium text-gray-600 mb-1">
+                Concepts covered:
+              </div>
               <div className="flex flex-wrap gap-1">
                 {concepts.map((c) => (
                   <span
@@ -189,15 +201,21 @@ function ResultPanel({
 
 /* ------------------------------- Main component --------------------------- */
 
-export default function QuizPreview({ questions , metadata }: 
-  { questions: QuizQuestion[], metadata: QuizMetadata }) {
+export default function QuizPreview({
+  questions,
+  quiz,
+}: {
+  questions: QuizQuestion[];
+  quiz: Quiz;
+}) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState<Record<number, string>>({});
   const [results, setResults] = useState<Record<number, Mark>>({});
 
   const currentQuestion = questions[currentIndex];
   const isMarked = results[currentIndex] !== undefined;
-  const normalizedCorrect = "answer" in currentQuestion ? normalize(currentQuestion.answer) : "";
+  const normalizedCorrect =
+    "answer" in currentQuestion ? normalize(currentQuestion.answer) : "";
 
   const handleChange = useCallback(
     (val: string) => {
@@ -218,7 +236,10 @@ export default function QuizPreview({ questions , metadata }:
         } else {
           mark = userAnswer === normalizedCorrect ? "correct" : "incorrect";
         }
-      } else if (currentQuestion.type === "essay" || currentQuestion.type === "shortanswer") {
+      } else if (
+        currentQuestion.type === "essay" ||
+        currentQuestion.type === "shortanswer"
+      ) {
         mark = "manual";
       }
 
@@ -267,8 +288,8 @@ export default function QuizPreview({ questions , metadata }:
   return (
     <Card>
       <CardHeader>
-        <h3>{metadata.name}</h3>
-        <p>{metadata.description}</p>
+        <h3>{quiz.title}</h3>
+        <p>{quiz.description}</p>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -279,9 +300,11 @@ export default function QuizPreview({ questions , metadata }:
           <Badge variant="secondary">{currentQuestion.type}</Badge>
         </div>
 
-        <p>{currentQuestion.question}</p>
+        <p>{currentQuestion.question_text}</p>
 
-        {(currentQuestion.type === "mcq" || currentQuestion.type === "truefalse") && renderChoices}
+        {(currentQuestion.type === "mcq" ||
+          currentQuestion.type === "truefalse") &&
+          renderChoices}
 
         {currentQuestion.type === "fill" && (
           <Input
@@ -292,7 +315,8 @@ export default function QuizPreview({ questions , metadata }:
           />
         )}
 
-        {(currentQuestion.type === "shortanswer" || currentQuestion.type === "essay") && (
+        {(currentQuestion.type === "shortanswer" ||
+          currentQuestion.type === "essay") && (
           <Textarea
             rows={currentQuestion.type === "essay" ? 8 : 5}
             placeholder="Write your answer here..."
@@ -306,7 +330,9 @@ export default function QuizPreview({ questions , metadata }:
         {results[currentIndex] && (
           <ResultPanel
             mark={results[currentIndex]!}
-            correctAnswer={"answer" in currentQuestion ? currentQuestion.answer : undefined}
+            correctAnswer={
+              "answer" in currentQuestion ? currentQuestion.answer : undefined
+            }
             explanation={currentQuestion.explanation}
           />
         )}
@@ -314,7 +340,11 @@ export default function QuizPreview({ questions , metadata }:
 
       <CardFooter className="flex flex-wrap justify-between items-center pt-6 border-t gap-4">
         <div className="flex flex-wrap justify-center gap-2">
-          <Button variant="outline" onClick={() => goTo(currentIndex - 1)} disabled={currentIndex === 0}>
+          <Button
+            variant="outline"
+            onClick={() => goTo(currentIndex - 1)}
+            disabled={currentIndex === 0}
+          >
             Previous
           </Button>
 
@@ -329,16 +359,16 @@ export default function QuizPreview({ questions , metadata }:
                 onClick={() => goTo(i)}
                 variant="outline"
                 size="sm"
-                className={clsx(
-                  "border",
-                  {
-                    "bg-green-100 border-green-400 text-green-800 hover:bg-green-100": isCorrect,
-                    "bg-red-100 border-red-400 text-red-800 hover:bg-red-100": isIncorrect,
-                    "ring-2 ring-offset-2 ring-gray-300": isActive && !isCorrect && !isIncorrect,
-                    "ring-2 ring-offset-2 ring-green-300": isActive && isCorrect,
-                    "ring-2 ring-offset-2 ring-red-300": isActive && isIncorrect,
-                  }
-                )}
+                className={clsx("border", {
+                  "bg-green-100 border-green-400 text-green-800 hover:bg-green-100":
+                    isCorrect,
+                  "bg-red-100 border-red-400 text-red-800 hover:bg-red-100":
+                    isIncorrect,
+                  "ring-2 ring-offset-2 ring-gray-300":
+                    isActive && !isCorrect && !isIncorrect,
+                  "ring-2 ring-offset-2 ring-green-300": isActive && isCorrect,
+                  "ring-2 ring-offset-2 ring-red-300": isActive && isIncorrect,
+                })}
                 aria-current={isActive ? "step" : undefined}
                 title={
                   markAt(i) === "correct"
@@ -373,3 +403,4 @@ export default function QuizPreview({ questions , metadata }:
     </Card>
   );
 }
+

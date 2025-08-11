@@ -15,7 +15,7 @@ export default function Navbar() {
     await supabase.auth.signOut()
     location.reload()
   }
-
+  
   if (loading) return null
 
   return (
@@ -76,10 +76,12 @@ export default function Navbar() {
                     </Button>
                   </Link>
                 ) : (
-                  <Button variant="outline"  onClick={handleLogout}>
+                  <div>
+                    <Button variant="outline"  onClick={handleLogout}>
                     <LogOutIcon className="h-4 w-4 mr-2" />
-                    Logout
-                  </Button>
+                      Logout
+                    </Button>
+                  </div>
                 )}
               </nav>
             </SheetContent>

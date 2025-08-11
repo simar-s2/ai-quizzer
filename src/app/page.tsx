@@ -5,7 +5,8 @@ import QuizPreview from "@/components/QuizPreview";
 import Spinner from "@/components/Spinner";
 import QuizSettings from "@/components/QuizSettings";
 import type { QuizQuestion } from "@/app/types";
-import type { QuizMetadata } from "@/app/types";
+import type { Quiz } from "@/app/types";
+import { saveQuiz } from "@/lib/supabase/saveQuiz";
 
 import {
   Card,
@@ -23,11 +24,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils"; // optional helper if you have it
 import { exportQuizQuestions, exportQuizMarkscheme } from '../app/quizExport';
+import { useAuth } from "@/components/AuthProvider";
+import { toast } from 'sonner';
 
 export default function Home() {
   // State
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
-  const [quizMetadata, setQuizMetadata] = useState<QuizMetadata | null>(null);
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(false);
   const [quizSettings, setQuizSettings] = useState({
     difficulty: "medium",
@@ -43,7 +46,7 @@ export default function Home() {
       },
     },
   });
-  
+
 
   // Local form state
   const [rawText, setRawText] = useState("");
@@ -53,7 +56,7 @@ export default function Home() {
   const handleTextSubmit = async () => {
     if (!rawText.trim()) return
     setQuizQuestions([])
-    setQuizMetadata(null)
+    setQuiz(null)
     setLoading(true)
   
     try {
@@ -63,9 +66,9 @@ export default function Home() {
         body: JSON.stringify({ text: rawText, settings: quizSettings }),
       })
       const data = await res.json()
-  
+      console.log(data.quiz)
       setQuizQuestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
-      setQuizMetadata(data.quiz.metadata ? data.quiz.metadata : {})
+      setQuiz(data.quiz.quiz ? data.quiz.quiz : {})
     } catch (e) {
       console.error(e)
     } finally {
@@ -76,7 +79,7 @@ export default function Home() {
   const handlePdfUpload = async () => {
     if (!files.length) return
     setQuizQuestions([])
-    setQuizMetadata(null)
+    setQuiz(null)
     setLoading(true)
   
     try {
@@ -90,7 +93,7 @@ export default function Home() {
       })
       const data = await res.json()
       setQuizQuestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
-      setQuizMetadata(data.quiz.metadata ? data.quiz.metadata : {})
+      setQuiz(data.quiz.quiz ? data.quiz.quiz : {})
     } catch (e) {
       console.error(e)
     } finally {
@@ -245,8 +248,8 @@ export default function Home() {
                     <div className="flex items-center justify-center py-12">
                       <Spinner />
                     </div>
-                  ) : quizQuestions.length > 0 && quizMetadata !== null ? (
-                    <QuizPreview questions={quizQuestions} metadata={quizMetadata} />
+                  ) : quizQuestions.length > 0 && quiz !== null ? (
+                    <QuizPreview questions={quizQuestions} quiz={quiz} />
                   ) : (
                     <EmptyPreviewState />
                   )}
@@ -256,13 +259,30 @@ export default function Home() {
               {/* Optional: Actions */}
               {quizQuestions.length > 0 && (
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => exportQuizQuestions(quizQuestions, quizMetadata ?? undefined)}>
+                  <Button variant="outline" onClick={() => exportQuizQuestions(quizQuestions, quiz)}>
                     Export Quiz
                   </Button>
-                  <Button variant="outline" onClick={() => exportQuizMarkscheme(quizQuestions, quizMetadata ?? undefined)}>
+                  <Button variant="outline" onClick={() => exportQuizMarkscheme(quizQuestions, quiz)}>
                     Export Markscheme
                   </Button>
-                  <Button>Start quiz</Button>
+                  
+                  {useAuth().user?.id && <Button>Start quiz</Button>}
+                  {useAuth().user?.id && quiz && (<Button
+                    disabled={loading}
+                    onClick={async () => {
+                      setLoading(true);
+                      try {
+                        await saveQuiz(quiz, quizQuestions);
+                        toast.success("Quiz saved!");
+                      } catch (err) {
+                        console.error('Save failed:', err);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                  >
+                    {loading ? 'Saving…' : 'Save Quiz'}
+                  </Button>)}
                 </div>
               )}
             </div>

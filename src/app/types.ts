@@ -1,30 +1,28 @@
-type QuizQuestion = {
-  id: string;
+export type QuizQuestion = {
+  id?: string;
+  quiz_id?: string;
   type: "mcq" | "fill" | "truefalse" | "shortanswer" | "essay";
-  question: string;
+  visibility?: "private" | "public" | "unlisted";
+  question_text: string;
   options?: string[];
-  answer: string;
-  topic: string;
   explanation?: string;
+  created_at?: string;
+  updated_at?: string;
+  answer: string;
+};
+
+export type Quiz = {
+  id?: string;
+  user_id?: string;
+  title: string;
+  description?: string;
+  subject?: string;
+  visibility?: "private" | "public" | "unlisted";
+  status?: "not_started" | "in_progress" | "completed";
+  total_time?: number;
   tags?: string[];
-  imageUrl?: string;
-  timeLimitSeconds?: number;
-};
-
-export type { QuizQuestion };
-
-type QuizMetadata = {
-  id?: string; // Unique quiz ID
-  name: string; // User-defined or AI-suggested
-  description?: string; // Optional summary or learning objective
-  createdAt: string; // ISO timestamp
-  updatedAt?: string; // For edits
-  authorId?: string; // Link to user
-  subject?: string; // e.g., "Math", "History"
+  metadata?: Record<string, any>; // Optional, see below
+  created_at?: string;
+  updated_at?: string;
   difficulty?: "easy" | "medium" | "hard" | "expert";
-  questionCount: number;
-  tags?: string[]; // e.g., ["revision", "SAT prep"]
-  visibility?: "private" | "public" | "unlisted"; // For sharing
 };
-
-export type { QuizMetadata };

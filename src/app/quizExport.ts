@@ -1,8 +1,8 @@
 import { jsPDF } from "jspdf";
 import type { QuizQuestion } from "@/app/types";
-import type { QuizMetadata } from "@/app/types";
+import type { Quiz } from "@/app/types";
 
-export function exportQuizQuestions(questions: QuizQuestion[], metadata = {} as QuizMetadata, filename = `${metadata.name}.pdf`) {
+export function exportQuizQuestions(questions: QuizQuestion[], quiz = {} as Quiz, filename = `${quiz.title}.pdf`) {
   const doc = new jsPDF();
   const margin = 20;
   const maxWidth = 140;
@@ -12,11 +12,12 @@ export function exportQuizQuestions(questions: QuizQuestion[], metadata = {} as 
 
   doc.setFont("Arial", "bold");
   doc.setFontSize(14);
-  doc.text(metadata.name, margin, y);
+  doc.text(quiz.title, margin, y);
   y += lineHeight;
   doc.setFontSize(11);
   doc.setFont("Arial", "normal");
-  const descriptionLines = doc.splitTextToSize(metadata.description, maxWidth);
+  const descriptionLines = doc.splitTextToSize(
+    quiz.description? quiz.description : "No description provided.", maxWidth);
   doc.text(descriptionLines, margin, y);
   y += descriptionLines.length * lineHeight + 4;
 
@@ -27,7 +28,7 @@ export function exportQuizQuestions(questions: QuizQuestion[], metadata = {} as 
     }
 
     // Wrap question text
-    const wrappedQuestion = doc.splitTextToSize(`Q${i + 1}: ${q.question}`, maxWidth);
+    const wrappedQuestion = doc.splitTextToSize(`Q${i + 1}: ${q.question_text}`, maxWidth);
     doc.setFont("Arial", "bold");
     wrappedQuestion.forEach((line:string, idx:number) => {
       doc.text(line, margin, y);
@@ -74,7 +75,7 @@ export function exportQuizQuestions(questions: QuizQuestion[], metadata = {} as 
   doc.save(filename);
 }
 
-export function exportQuizMarkscheme(questions: QuizQuestion[], metadata = {} as QuizMetadata, filename = `${metadata.name} markscheme.pdf`) {
+export function exportQuizMarkscheme(questions: QuizQuestion[], quiz = {} as Quiz, filename = `${quiz.title} markscheme.pdf`) {
   const doc = new jsPDF();
   const margin = 20;
   const maxWidth = 140;
