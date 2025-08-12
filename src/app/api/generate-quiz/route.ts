@@ -64,14 +64,16 @@ async function generateQuiz({
       : "evenly distributed";
       
       const basePrompt = `
-      You are an expert quiz creator. Produce exactly ${numQuestions} ${difficulty}-level quiz questions on the subject "${topic}" based on the ${files ? "uploaded PDF documents" : "following text"} below:
-      
+      You are an expert quiz creator. Produce exactly ${numQuestions} 
+      ${difficulty}-level quiz questions on the subject "${topic}" 
+      based on the ${files ? "uploaded PDF documents" : "following text"} below:
       ${text || "(no inline text provided)"}
       
       Use this distribution of question types: ${distributionText}.
       Allow only these types: ${type.selectedTypes.join(", ")}.
       
-      Respond with a single JSON object matching this schema exactly (no extra keys, no markdown, no commentary):
+      Respond with a single JSON object matching this schema exactly 
+      (no extra keys, no markdown, no commentary):
       
       {
         "quiz": {
@@ -153,8 +155,6 @@ async function generateQuiz({
     },
   });
   
-  
-  
   const cleaned = cleanGeminiResponse(response.text || "");
   let parsed;
   try {
@@ -177,12 +177,13 @@ export async function POST(req: Request) {
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
-      const files = formData.getAll("files") as File[]; // "files" key for multiple
+      const files = formData.getAll("files") as File[]; 
       const settings = formData.get("settings")?.toString() || "{}";
       const settingsJson = JSON.parse(settings);
 
       if (!files || files.length === 0) {
-        return NextResponse.json({ error: "No files uploaded" }, { status: 400 });
+        return NextResponse.json({ error: "No files uploaded" },
+           { status: 400 });
       }
 
       const uploadedFiles: { uri: string; mimeType: string }[] = [];

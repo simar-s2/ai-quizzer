@@ -50,14 +50,15 @@ export default function Navbar() {
               </Button>
             </Link>
           ) : (
-            <Button variant="outline"  onClick={handleLogout}>
-              <LogOutIcon className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
+            <div>
+              <p></p>
+              <Button variant="outline"  onClick={handleLogout}>
+                <LogOutIcon className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+          </div>
           )}
-
-            <ThemeToggle />
-
+          <ThemeToggle />
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="md:hidden">
@@ -76,12 +77,10 @@ export default function Navbar() {
                     </Button>
                   </Link>
                 ) : (
-                  <div>
-                    <Button variant="outline"  onClick={handleLogout}>
-                    <LogOutIcon className="h-4 w-4 mr-2" />
-                      Logout
-                    </Button>
-                  </div>
+                  <Button variant="outline"  onClick={handleLogout}>
+                  <LogOutIcon className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
                 )}
               </nav>
             </SheetContent>

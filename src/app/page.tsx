@@ -7,7 +7,6 @@ import QuizSettings from "@/components/QuizSettings";
 import type { QuizQuestion } from "@/app/types";
 import type { Quiz } from "@/app/types";
 import { saveQuiz } from "@/lib/supabase/saveQuiz";
-
 import {
   Card,
   CardHeader,
@@ -21,16 +20,17 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils"; // optional helper if you have it
-import { exportQuizQuestions, exportQuizMarkscheme } from '../app/quizExport';
+import {exportQuizquestions, exportQuizMarkscheme, exportQuizQuestions } from '../app/quizExport';
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from 'sonner';
+import { Link } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   // State
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
-  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [questions, setquestions] = useState<QuizQuestion[]>([]);
+  const [quiz, setQuiz] = useState<Quiz>();
   const [loading, setLoading] = useState(false);
   const [quizSettings, setQuizSettings] = useState({
     difficulty: "medium",
@@ -46,6 +46,10 @@ export default function Home() {
       },
     },
   });
+  // Router
+  const router = useRouter();
+  const user_id = useAuth().user?.id;
+
 
 
   // Local form state
@@ -55,8 +59,8 @@ export default function Home() {
   // Actions
   const handleTextSubmit = async () => {
     if (!rawText.trim()) return
-    setQuizQuestions([])
-    setQuiz(null)
+    setquestions([])
+    setQuiz(undefined)
     setLoading(true)
   
     try {
@@ -67,7 +71,7 @@ export default function Home() {
       })
       const data = await res.json()
       console.log(data.quiz)
-      setQuizQuestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
+      setquestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
       setQuiz(data.quiz.quiz ? data.quiz.quiz : {})
     } catch (e) {
       console.error(e)
@@ -78,8 +82,8 @@ export default function Home() {
   
   const handlePdfUpload = async () => {
     if (!files.length) return
-    setQuizQuestions([])
-    setQuiz(null)
+    setquestions([])
+    setQuiz(undefined)
     setLoading(true)
   
     try {
@@ -92,7 +96,7 @@ export default function Home() {
         body: formData,
       })
       const data = await res.json()
-      setQuizQuestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
+      setquestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
       setQuiz(data.quiz.quiz ? data.quiz.quiz : {})
     } catch (e) {
       console.error(e)
@@ -195,16 +199,6 @@ export default function Home() {
                   </TabsContent>
                 </Tabs>
               </CardContent>
-
-              {/* Loading indicator */}
-              {loading && (
-                <div className="px-6 pb-6">
-                  <div className="flex items-center gap-3">
-                    <Progress value={70} className="w-48" />
-                    <span className="text-xs text-muted-foreground">Processing…</span>
-                  </div>
-                </div>
-              )}
             </Card>
 
             {/* Settings */}
@@ -238,8 +232,8 @@ export default function Home() {
                         Review and interact before exporting.
                       </p>
                     </div>
-                    {!!quizQuestions.length && (
-                      <Badge variant="secondary">{quizQuestions.length} Qs</Badge>
+                    {!!questions.length && (
+                      <Badge variant="secondary">{questions.length} Qs</Badge>
                     )}
                   </div>
                 </CardHeader>
@@ -248,8 +242,8 @@ export default function Home() {
                     <div className="flex items-center justify-center py-12">
                       <Spinner />
                     </div>
-                  ) : quizQuestions.length > 0 && quiz !== null ? (
-                    <QuizPreview questions={quizQuestions} quiz={quiz} />
+                  ) : questions.length > 0 && quiz !== undefined ? (
+                    <QuizPreview questions={questions} quiz={quiz} />
                   ) : (
                     <EmptyPreviewState />
                   )}
@@ -257,24 +251,64 @@ export default function Home() {
               </Card>
 
               {/* Optional: Actions */}
-              {quizQuestions.length > 0 && (
+              {questions.length > 0 && (
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => exportQuizQuestions(quizQuestions, quiz)}>
+
+                  <Button variant="outline" onClick={() =>
+                    {
+                      exportQuizQuestions(questions, quiz);
+                      saveQuiz(quiz, questions);
+                      toast.success("Quiz exported and saved successfully!");
+                    } 
+                    }>
                     Export Quiz
                   </Button>
-                  <Button variant="outline" onClick={() => exportQuizMarkscheme(quizQuestions, quiz)}>
+                  <Button variant="outline" onClick={() => exportQuizMarkscheme(questions, quiz)}>
                     Export Markscheme
                   </Button>
+
+                  {user_id && quiz && (
+                    <Button
+                      disabled={loading}
+                      onClick={async () => {
+                        if (!user_id) {
+                          console.error("User ID is null or undefined");
+                          return;
+                        }
+                        if (!quiz) {
+                          console.error("Quiz is null or undefined");
+                          return;
+                        }
+                        setLoading(true);
+                        try {
+                          const id = await saveQuiz(quiz, questions);
+                          if (!id) {
+                            console.error("No quiz ID returned from saveQuiz");
+                            return;
+                          }
+                          toast.success("🎯 Quiz started!");
+                          router.push(`/quiz/${id}`);
+                        } catch (err) {
+                          toast.error("💔 Could not start quiz!");
+                          console.error("Start quiz failed:", err);
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                    >
+                      {loading ? "Starting…" : "Start Quiz"}
+                    </Button>
+                  )}
                   
-                  {useAuth().user?.id && <Button>Start quiz</Button>}
-                  {useAuth().user?.id && quiz && (<Button
+                  {user_id && quiz && (<Button
                     disabled={loading}
                     onClick={async () => {
                       setLoading(true);
                       try {
-                        await saveQuiz(quiz, quizQuestions);
-                        toast.success("Quiz saved!");
+                        await saveQuiz(quiz, questions);
+                        toast.success("🎉 Quiz saved!");
                       } catch (err) {
+                        toast.error("💩 Quiz save failed!");
                         console.error('Save failed:', err);
                       } finally {
                         setLoading(false);
@@ -282,7 +316,9 @@ export default function Home() {
                     }}
                   >
                     {loading ? 'Saving…' : 'Save Quiz'}
-                  </Button>)}
+                  </Button>
+                  )}
+
                 </div>
               )}
             </div>

@@ -20,8 +20,6 @@ export async function saveQuiz(
   const { ...sanitizedQuiz } = quiz as any;
   const quiz_upload = { ...sanitizedQuiz, user_id: user.id };
 
-  console.log("📦 quiz_upload payload:", quiz_upload);
-
   // Insert quiz
   const { data: insertedQuiz, error: quizError } = await supabase
     .from('quizzes')
