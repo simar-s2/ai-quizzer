@@ -1,16 +1,15 @@
-"use server";
 
-import { createClient } from './server'; // Supabase client with cookies support
-import { Quiz, QuizQuestion } from '@/app/types';
+import { createClient } from "./server";
+import { Quiz, QuizQuestion } from "@/app/types";
 
-export async function saveQuiz(
-  quiz: Quiz,
-  questions: QuizQuestion[]
-) {
+export async function saveQuiz(quiz: Quiz, questions: QuizQuestion[]) {
   const supabase = await createClient();
 
   // 🔐 Get current user from the server session
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
   if (userError || !user) {
     throw new Error("No authenticated user found");
@@ -22,7 +21,7 @@ export async function saveQuiz(
 
   // Insert quiz
   const { data: insertedQuiz, error: quizError } = await supabase
-    .from('quizzes')
+    .from("quizzes")
     .insert([quiz_upload])
     .select()
     .single();
@@ -30,13 +29,13 @@ export async function saveQuiz(
   if (quizError) throw quizError;
 
   // Insert questions
-  const enrichedQuestions = questions.map(q => ({
+  const enrichedQuestions = questions.map((q) => ({
     ...q,
     quiz_id: insertedQuiz.id,
   }));
 
   const { error: questionError } = await supabase
-    .from('questions')
+    .from("questions")
     .insert(enrichedQuestions);
 
   if (questionError) {

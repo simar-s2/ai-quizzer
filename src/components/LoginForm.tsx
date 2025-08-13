@@ -1,31 +1,31 @@
-'use client'
+"use client";
 
-import { useState } from "react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useAuth } from "@/components/AuthProvider"
-import { useRouter } from "next/navigation"
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/components/AuthProvider";
+import { useRouter } from "next/navigation";
 
 export default function LoginForm({
   onToggleForm,
   className,
   ...props
 }: React.ComponentPropsWithRef<"div"> & { onToggleForm: () => void }) {
-  const router = useRouter()
-  const { supabase } = useAuth()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const { supabase } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,9 +38,9 @@ export default function LoginForm({
     if (error) {
       setError(error.message);
     } else {
-      router.push("/") 
+      router.push("/");
     }
-    setLoading(false)
+    setLoading(false);
   };
 
   return (
@@ -125,5 +125,5 @@ export default function LoginForm({
         and <a href="#">Privacy Policy</a>.
       </div>
     </div>
-  )
+  );
 }

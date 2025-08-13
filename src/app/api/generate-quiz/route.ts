@@ -7,7 +7,10 @@ const client = new GoogleGenAI({
 
 // Helper to clean Gemini's response
 function cleanGeminiResponse(text: string): string {
-  let cleaned = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+  let cleaned = text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
   const first = cleaned.indexOf("{");
   const last = cleaned.lastIndexOf("}");
   if (first !== -1 && last !== -1) {
@@ -23,11 +26,11 @@ async function uploadAndWait(fileBlob: Blob, displayName: string) {
     config: { displayName },
   });
 
-  let getFile = await client.files.get({ name: file.name ?? '' });
+  let getFile = await client.files.get({ name: file.name ?? "" });
   while (getFile.state === "PROCESSING") {
     console.log(`Processing ${displayName}...`);
     await new Promise((resolve) => setTimeout(resolve, 5000));
-    getFile = await client.files.get({ name: file.name ?? '' });
+    getFile = await client.files.get({ name: file.name ?? "" });
   }
 
   if (getFile.state === "FAILED") {
@@ -62,8 +65,8 @@ async function generateQuiz({
           .map(([key, value]) => `${key}: ${value}`)
           .join(", ")
       : "evenly distributed";
-      
-      const basePrompt = `
+
+  const basePrompt = `
       You are an expert quiz creator. Produce exactly ${numQuestions} 
       ${difficulty}-level quiz questions on the subject "${topic}" 
       based on the ${files ? "uploaded PDF documents" : "following text"} below:
@@ -95,8 +98,8 @@ async function generateQuiz({
       }
       Output JSON only.
       `.trim();
-      
-        const parts: any[] = [{ text: basePrompt }];
+
+  const parts: any[] = [{ text: basePrompt }];
 
   if (files) {
     for (const file of files) {
@@ -154,7 +157,7 @@ async function generateQuiz({
       },
     },
   });
-  
+
   const cleaned = cleanGeminiResponse(response.text || "");
   let parsed;
   try {
@@ -177,13 +180,15 @@ export async function POST(req: Request) {
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
-      const files = formData.getAll("files") as File[]; 
+      const files = formData.getAll("files") as File[];
       const settings = formData.get("settings")?.toString() || "{}";
       const settingsJson = JSON.parse(settings);
 
       if (!files || files.length === 0) {
-        return NextResponse.json({ error: "No files uploaded" },
-           { status: 400 });
+        return NextResponse.json(
+          { error: "No files uploaded" },
+          { status: 400 }
+        );
       }
 
       const uploadedFiles: { uri: string; mimeType: string }[] = [];
@@ -193,11 +198,17 @@ export async function POST(req: Request) {
         const blob = new Blob([buffer], { type: "application/pdf" });
         const uploaded = await uploadAndWait(blob, file.name);
         if (uploaded.uri && uploaded.mimeType) {
-          uploadedFiles.push({ uri: uploaded.uri, mimeType: uploaded.mimeType });
+          uploadedFiles.push({
+            uri: uploaded.uri,
+            mimeType: uploaded.mimeType,
+          });
         }
       }
 
-      const quiz = await generateQuiz({ files: uploadedFiles, ...settingsJson });
+      const quiz = await generateQuiz({
+        files: uploadedFiles,
+        ...settingsJson,
+      });
       return NextResponse.json({ quiz });
     } else {
       // Handle JSON text input
@@ -207,6 +218,9 @@ export async function POST(req: Request) {
     }
   } catch (err: any) {
     console.error("Error generating quiz:", err);
-    return NextResponse.json({ error: "Failed to generate quiz" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to generate quiz" },
+      { status: 500 }
+    );
   }
 }

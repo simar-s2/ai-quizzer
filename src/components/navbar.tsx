@@ -1,22 +1,26 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { NavigationMenu, NavigationMenuItem, NavigationMenuList } from "@/components/ui/navigation-menu"
-import { Menu, LogOutIcon, UserIcon } from "lucide-react"
-import Link from "next/link"
-import { useAuth } from "@/components/AuthProvider"
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuList,
+} from "@/components/ui/navigation-menu";
+import { Menu, LogOutIcon, UserIcon } from "lucide-react";
+import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Navbar() {
-  const { session, supabase, user, loading } = useAuth()
+  const { session, supabase, user, loading } = useAuth();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    location.reload()
-  }
-  
-  if (loading) return null
+    await supabase.auth.signOut();
+    location.reload();
+  };
+
+  if (loading) return null;
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background text-foreground">
@@ -28,13 +32,17 @@ export default function Navbar() {
           <NavigationMenuList className="flex gap-6">
             <NavigationMenuItem>
               <Link href="/">
-                <Button variant="ghost" className="text-sm font-medium">Home</Button>
+                <Button variant="ghost" className="text-sm font-medium">
+                  Home
+                </Button>
               </Link>
             </NavigationMenuItem>
             {session && (
               <NavigationMenuItem>
                 <Link href="/dashboard">
-                  <Button variant="ghost" className="text-sm font-medium">Dashboard</Button>
+                  <Button variant="ghost" className="text-sm font-medium">
+                    Dashboard
+                  </Button>
                 </Link>
               </NavigationMenuItem>
             )}
@@ -44,7 +52,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           {!session ? (
             <Link href="/auth">
-              <Button variant="outline" >
+              <Button variant="outline">
                 <UserIcon className="h-4 w-4 mr-2" />
                 Login
               </Button>
@@ -52,11 +60,11 @@ export default function Navbar() {
           ) : (
             <div>
               <p></p>
-              <Button variant="outline"  onClick={handleLogout}>
+              <Button variant="outline" onClick={handleLogout}>
                 <LogOutIcon className="h-4 w-4 mr-2" />
                 Logout
               </Button>
-          </div>
+            </div>
           )}
           <ThemeToggle />
           <Sheet>
@@ -67,18 +75,24 @@ export default function Navbar() {
             </SheetTrigger>
             <SheetContent>
               <nav className="mt-6 space-y-4">
-                <Link href="/" className="block">Home</Link>
-                {session && <Link href="/dashboard" className="block">Dashboard</Link>}
+                <Link href="/" className="block">
+                  Home
+                </Link>
+                {session && (
+                  <Link href="/dashboard" className="block">
+                    Dashboard
+                  </Link>
+                )}
                 {!session ? (
                   <Link href="/auth">
-                    <Button variant="outline" >
+                    <Button variant="outline">
                       <UserIcon className="h-4 w-4 mr-2" />
                       Login
                     </Button>
                   </Link>
                 ) : (
-                  <Button variant="outline"  onClick={handleLogout}>
-                  <LogOutIcon className="h-4 w-4 mr-2" />
+                  <Button variant="outline" onClick={handleLogout}>
+                    <LogOutIcon className="h-4 w-4 mr-2" />
                     Logout
                   </Button>
                 )}
@@ -88,6 +102,5 @@ export default function Navbar() {
         </div>
       </div>
     </header>
-  )
+  );
 }
-

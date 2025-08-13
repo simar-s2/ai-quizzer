@@ -1,5 +1,5 @@
 // components/ui/spinner.tsx
-export default function Spinner () {
+export default function Spinner() {
   return (
     <div className="h-15 w-15 text-slate-900">
       <svg
@@ -35,5 +35,5 @@ export default function Spinner () {
         </circle>
       </svg>
     </div>
-  )
+  );
 }

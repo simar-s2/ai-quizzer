@@ -4,9 +4,7 @@ import { useState } from "react";
 import QuizPreview from "@/components/QuizPreview";
 import Spinner from "@/components/Spinner";
 import QuizSettings from "@/components/QuizSettings";
-import type { QuizQuestion } from "@/app/types";
-import type { Quiz } from "@/app/types";
-import { saveQuiz } from "@/lib/supabase/saveQuiz";
+import type { QuizQuestion, Quiz } from "@/app/types";
 import {
   Card,
   CardHeader,
@@ -21,11 +19,13 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils"; // optional helper if you have it
-import {exportQuizquestions, exportQuizMarkscheme, exportQuizQuestions } from '../app/quizExport';
 import { useAuth } from "@/components/AuthProvider";
-import { toast } from 'sonner';
-import { Link } from "lucide-react";
 import { useRouter } from "next/navigation";
+import {
+  ExportQuizButtons,
+  QuizStartButton,
+  QuizSaveButton,
+} from "@/components/QuizFunctionButtons";
 
 export default function Home() {
   // State
@@ -50,58 +50,60 @@ export default function Home() {
   const router = useRouter();
   const user_id = useAuth().user?.id;
 
-
-
   // Local form state
   const [rawText, setRawText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
 
   // Actions
   const handleTextSubmit = async () => {
-    if (!rawText.trim()) return
-    setquestions([])
-    setQuiz(undefined)
-    setLoading(true)
-  
+    if (!rawText.trim()) return;
+    setquestions([]);
+    setQuiz(undefined);
+    setLoading(true);
+
     try {
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: rawText, settings: quizSettings }),
-      })
-      const data = await res.json()
-      console.log(data.quiz)
-      setquestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
-      setQuiz(data.quiz.quiz ? data.quiz.quiz : {})
+      });
+      const data = await res.json();
+      console.log(data.quiz);
+      setquestions(
+        Array.isArray(data.quiz.questions) ? data.quiz.questions : []
+      );
+      setQuiz(data.quiz.quiz ? data.quiz.quiz : {});
     } catch (e) {
-      console.error(e)
+      console.error(e);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
-  
+
   const handlePdfUpload = async () => {
-    if (!files.length) return
-    setquestions([])
-    setQuiz(undefined)
-    setLoading(true)
-  
+    if (!files.length) return;
+    setquestions([]);
+    setQuiz(undefined);
+    setLoading(true);
+
     try {
-      const formData = new FormData()
-      files.forEach((file) => formData.append("files", file))
-      formData.append("settings", JSON.stringify(quizSettings))
-  
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+      formData.append("settings", JSON.stringify(quizSettings));
+
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
         body: formData,
-      })
-      const data = await res.json()
-      setquestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
-      setQuiz(data.quiz.quiz ? data.quiz.quiz : {})
+      });
+      const data = await res.json();
+      setquestions(
+        Array.isArray(data.quiz.questions) ? data.quiz.questions : []
+      );
+      setQuiz(data.quiz.quiz ? data.quiz.quiz : {});
     } catch (e) {
-      console.error(e)
+      console.error(e);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -110,9 +112,7 @@ export default function Home() {
       {/* Hero */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         <div className="max-w-2xl">
-          <h1>
-            Generate quizzes from your documents or notes
-          </h1>
+          <h1>Generate quizzes from your documents or notes</h1>
           <p className="mt-2 text-slate-600">
             Upload PDFs or paste text. Tune settings. Preview instantly.
           </p>
@@ -154,7 +154,10 @@ export default function Home() {
                     </div>
                     <CardFooter className="px-0 pt-4">
                       <div className="flex items-center gap-3">
-                        <Button onClick={handleTextSubmit} disabled={loading || !rawText.trim()}>
+                        <Button
+                          onClick={handleTextSubmit}
+                          disabled={loading || !rawText.trim()}
+                        >
                           {loading ? "Generating..." : "Generate quiz"}
                         </Button>
                         <span className="text-xs text-muted-foreground">
@@ -174,7 +177,9 @@ export default function Home() {
                           type="file"
                           multiple
                           accept=".pdf"
-                          onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                          onChange={(e) =>
+                            setFiles(Array.from(e.target.files || []))
+                          }
                         />
                         <p className="text-xs text-muted-foreground mt-2">
                           You can select multiple PDFs.
@@ -188,11 +193,15 @@ export default function Home() {
                     </div>
                     <CardFooter className="px-0 pt-4">
                       <div className="flex items-center gap-3">
-                        <Button onClick={handlePdfUpload} disabled={loading || files.length === 0}>
+                        <Button
+                          onClick={handlePdfUpload}
+                          disabled={loading || files.length === 0}
+                        >
                           {loading ? "Generating..." : "Generate quiz"}
                         </Button>
                         <span className="text-xs text-muted-foreground">
-                          PDFs are parsed and summarized before question creation.
+                          PDFs are parsed and summarized before question
+                          creation.
                         </span>
                       </div>
                     </CardFooter>
@@ -222,7 +231,7 @@ export default function Home() {
 
           {/* Right: Sticky preview */}
           <div className="lg:col-span-5">
-            <div className="lg:sticky lg:top-6 space-y-4">
+            <div className=" lg:top-6 space-y-4">
               <Card className="overflow-hidden">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -250,75 +259,27 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              {/* Optional: Actions */}
+              {/* Quiz Buttons */}
               {questions.length > 0 && (
                 <div className="flex gap-2">
-
-                  <Button variant="outline" onClick={() =>
-                    {
-                      exportQuizQuestions(questions, quiz);
-                      saveQuiz(quiz, questions);
-                      toast.success("Quiz exported and saved successfully!");
-                    } 
-                    }>
-                    Export Quiz
-                  </Button>
-                  <Button variant="outline" onClick={() => exportQuizMarkscheme(questions, quiz)}>
-                    Export Markscheme
-                  </Button>
+                  <ExportQuizButtons
+                    quiz={quiz}
+                    questions={questions}
+                  ></ExportQuizButtons>
 
                   {user_id && quiz && (
-                    <Button
-                      disabled={loading}
-                      onClick={async () => {
-                        if (!user_id) {
-                          console.error("User ID is null or undefined");
-                          return;
-                        }
-                        if (!quiz) {
-                          console.error("Quiz is null or undefined");
-                          return;
-                        }
-                        setLoading(true);
-                        try {
-                          const id = await saveQuiz(quiz, questions);
-                          if (!id) {
-                            console.error("No quiz ID returned from saveQuiz");
-                            return;
-                          }
-                          toast.success("🎯 Quiz started!");
-                          router.push(`/quiz/${id}`);
-                        } catch (err) {
-                          toast.error("💔 Could not start quiz!");
-                          console.error("Start quiz failed:", err);
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                    >
-                      {loading ? "Starting…" : "Start Quiz"}
-                    </Button>
-                  )}
-                  
-                  {user_id && quiz && (<Button
-                    disabled={loading}
-                    onClick={async () => {
-                      setLoading(true);
-                      try {
-                        await saveQuiz(quiz, questions);
-                        toast.success("🎉 Quiz saved!");
-                      } catch (err) {
-                        toast.error("💩 Quiz save failed!");
-                        console.error('Save failed:', err);
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                  >
-                    {loading ? 'Saving…' : 'Save Quiz'}
-                  </Button>
+                    <QuizStartButton
+                      quiz={quiz}
+                      questions={questions}
+                    ></QuizStartButton>
                   )}
 
+                  {user_id && quiz && (
+                    <QuizSaveButton
+                      quiz={quiz}
+                      questions={questions}
+                    ></QuizSaveButton>
+                  )}
                 </div>
               )}
             </div>

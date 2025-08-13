@@ -26,9 +26,10 @@ export default function AuthPage() {
   // Prevent flashing by showing nothing while loading
   if (loading || user) {
     return (
-    <div className="flex items-center justify-center">
-      <Spinner></Spinner>
-    </div>);
+      <div className="flex items-center justify-center">
+        <Spinner></Spinner>
+      </div>
+    );
   }
 
   return (

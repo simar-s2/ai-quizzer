@@ -25,14 +25,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Main content: takes rest of space, scrollable */}
-            <main className="flex-1 overflow-y-auto p-4">
-              {children}
-            </main>
+            <main className="flex-1 overflow-y-auto p-4">{children}</main>
           </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
   );
 }
-
-

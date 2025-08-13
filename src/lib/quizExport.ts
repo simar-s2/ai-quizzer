@@ -2,7 +2,11 @@ import { jsPDF } from "jspdf";
 import type { QuizQuestion } from "@/app/types";
 import type { Quiz } from "@/app/types";
 
-export function exportQuizQuestions(questions: QuizQuestion[], quiz = {} as Quiz, filename = `${quiz.title}.pdf`) {
+export function exportQuizQuestions(
+  questions: QuizQuestion[],
+  quiz = {} as Quiz,
+  filename = `${quiz.title}.pdf`
+) {
   const doc = new jsPDF();
   const margin = 20;
   const maxWidth = 140;
@@ -17,7 +21,9 @@ export function exportQuizQuestions(questions: QuizQuestion[], quiz = {} as Quiz
   doc.setFontSize(11);
   doc.setFont("Arial", "normal");
   const descriptionLines = doc.splitTextToSize(
-    quiz.description? quiz.description : "No description provided.", maxWidth);
+    quiz.description ? quiz.description : "No description provided.",
+    maxWidth
+  );
   doc.text(descriptionLines, margin, y);
   y += descriptionLines.length * lineHeight + 4;
 
@@ -28,9 +34,12 @@ export function exportQuizQuestions(questions: QuizQuestion[], quiz = {} as Quiz
     }
 
     // Wrap question text
-    const wrappedQuestion = doc.splitTextToSize(`Q${i + 1}: ${q.question_text}`, maxWidth);
+    const wrappedQuestion = doc.splitTextToSize(
+      `Q${i + 1}: ${q.question_text}`,
+      maxWidth
+    );
     doc.setFont("Arial", "bold");
-    wrappedQuestion.forEach((line:string, idx:number) => {
+    wrappedQuestion.forEach((line: string, idx: number) => {
       doc.text(line, margin, y);
       if (idx === 0) doc.text("[1]", 180, y);
       y += lineHeight;
@@ -51,9 +60,13 @@ export function exportQuizQuestions(questions: QuizQuestion[], quiz = {} as Quiz
       y += lineHeight;
     } else {
       const lines =
-        q.type === "essay" ? 20 :
-        q.type === "shortanswer" ? 5 :
-        q.type === "fill" ? 0 : 1;
+        q.type === "essay"
+          ? 20
+          : q.type === "shortanswer"
+          ? 5
+          : q.type === "fill"
+          ? 0
+          : 1;
 
       if (lines > 0) {
         doc.setFontSize(8); // smaller font for dotted lines
@@ -75,7 +88,11 @@ export function exportQuizQuestions(questions: QuizQuestion[], quiz = {} as Quiz
   doc.save(filename);
 }
 
-export function exportQuizMarkscheme(questions: QuizQuestion[], quiz = {} as Quiz, filename = `${quiz.title} markscheme.pdf`) {
+export function exportQuizMarkscheme(
+  questions: QuizQuestion[],
+  quiz = {} as Quiz,
+  filename = `${quiz.title} markscheme.pdf`
+) {
   const doc = new jsPDF();
   const margin = 20;
   const maxWidth = 140;
@@ -96,7 +113,10 @@ export function exportQuizMarkscheme(questions: QuizQuestion[], quiz = {} as Qui
       y = margin;
     }
 
-    const wrappedAnswer = doc.splitTextToSize(`Q${i + 1}: ${q.answer}`, maxWidth);
+    const wrappedAnswer = doc.splitTextToSize(
+      `Q${i + 1}: ${q.answer}`,
+      maxWidth
+    );
     wrappedAnswer.forEach((line: string) => {
       if (y > 270) {
         doc.addPage();

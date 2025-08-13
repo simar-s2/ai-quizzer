@@ -14,8 +14,8 @@ import { Badge } from "./ui/badge";
 import clsx from "clsx";
 import type { QuizQuestion } from "@/app/types";
 import type { Quiz } from "@/app/types";
-import { exportQuizQuestions } from "@/app/quizExport";
-import { exportQuizMarkscheme } from "@/app/quizExport";
+import { exportQuizQuestions } from "@/lib/quizExport";
+import { exportQuizMarkscheme } from "@/lib/quizExport";
 import { Label } from "./ui/label";
 
 /* ----------------------------- Helpers ----------------------------- */
@@ -292,14 +292,15 @@ export default function QuizTakingMenu({
     <Card>
       <CardHeader>
         <div className="flex flex-wrap gap-2">
-            {quiz.tags?.map((tag, index) => (
-                <Badge key={index} variant={"secondary"}>{tag}</Badge>
-            ))}
+          {quiz.tags?.map((tag, index) => (
+            <Badge key={index} variant={"secondary"}>
+              {tag}
+            </Badge>
+          ))}
         </div>
         <h3>{quiz.title}</h3>
         <p>{quiz.description}</p>
         <p>{quiz.created_at}</p>
-        
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -410,13 +411,18 @@ export default function QuizTakingMenu({
           🧠 Check Answer
         </Button>
       </CardFooter>
-      <Button variant="outline" onClick={() => exportQuizQuestions(questions, quiz)}>
-                          Export Quiz
-                        </Button>
-                        <Button variant="outline" onClick={() => exportQuizMarkscheme(questions, quiz)}>
-                          Export Markscheme
-                        </Button>
+      <Button
+        variant="outline"
+        onClick={() => exportQuizQuestions(questions, quiz)}
+      >
+        Export Quiz
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => exportQuizMarkscheme(questions, quiz)}
+      >
+        Export Markscheme
+      </Button>
     </Card>
   );
 }
-

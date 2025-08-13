@@ -1,51 +1,53 @@
-'use client'
+"use client";
 
-import { useState } from "react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useAuth } from "@/components/AuthProvider"
-import { useRouter } from "next/navigation"
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/components/AuthProvider";
+import { useRouter } from "next/navigation";
 
 export default function SignUpForm({
   onToggleForm,
   className,
   ...props
 }: React.ComponentPropsWithRef<"div"> & { onToggleForm: () => void }) {
-    const router = useRouter()
-    const { supabase } = useAuth()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const { supabase } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-  
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
-    })
-  
+    });
+
     if (error) {
-      setError(error.message)
+      setError(error.message);
     } else {
-      const { data: { session } } = await supabase.auth.getSession()
-      router.push("/")
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      router.push("/");
     }
-  
-    setLoading(false)
-  }
+
+    setLoading(false);
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -123,5 +125,5 @@ export default function SignUpForm({
         and <a href="#">Privacy Policy</a>.
       </div>
     </div>
-  )
+  );
 }

@@ -14,9 +14,6 @@ import { Badge } from "./ui/badge";
 import clsx from "clsx";
 import type { QuizQuestion } from "@/app/types";
 import type { Quiz } from "@/app/types";
-import { exportQuizQuestions, exportQuizMarkscheme } from "@/app/quizExport";
-import { saveQuiz } from "@/lib/supabase/saveQuiz";
-import { toast } from "sonner";
 
 const TRUE_FALSE_OPTIONS = ["True", "False"] as const;
 
