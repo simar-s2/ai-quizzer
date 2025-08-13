@@ -262,11 +262,12 @@ export default function Home() {
               {/* Quiz Buttons */}
               {questions.length > 0 && (
                 <div className="flex gap-2">
-                  <ExportQuizButtons
-                    quiz={quiz}
-                    questions={questions}
-                  ></ExportQuizButtons>
-
+                  {quiz && (
+                    <ExportQuizButtons
+                      quiz={quiz}
+                      questions={questions}
+                    ></ExportQuizButtons>
+                  )}
                   {user_id && quiz && (
                     <QuizStartButton
                       quiz={quiz}

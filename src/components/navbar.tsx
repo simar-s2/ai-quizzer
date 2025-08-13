@@ -14,7 +14,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Navbar() {
   const { session, supabase, user, loading } = useAuth();
-
+  
   const handleLogout = async () => {
     await supabase.auth.signOut();
     location.reload();
