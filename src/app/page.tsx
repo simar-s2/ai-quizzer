@@ -26,6 +26,8 @@ import {
   QuizStartButton,
   QuizSaveButton,
 } from "@/components/QuizFunctionButtons";
+import { StickyNoteIcon } from "lucide-react";
+import { BrainCogIcon } from "lucide-react";
 
 export default function Home() {
   // State
@@ -303,20 +305,7 @@ function EmptyPreviewState() {
   return (
     <div className="py-12 text-center">
       <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M3 3h7l5 5v13H3z" />
-          <path d="M10 3v5h5" />
-        </svg>
+        <StickyNoteIcon></StickyNoteIcon>
       </div>
       <h4 className="font-medium">No preview yet</h4>
       <p className="text-sm text-muted-foreground">

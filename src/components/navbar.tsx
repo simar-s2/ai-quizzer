@@ -11,10 +11,12 @@ import { Menu, LogOutIcon, UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { HomeIcon } from "lucide-react";
+import { LayoutDashboardIcon } from "lucide-react";
 
 export default function Navbar() {
   const { session, supabase, user, loading } = useAuth();
-  
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     location.reload();
@@ -33,7 +35,7 @@ export default function Navbar() {
             <NavigationMenuItem>
               <Link href="/">
                 <Button variant="ghost" className="text-sm font-medium">
-                  Home
+                  <HomeIcon></HomeIcon>Home
                 </Button>
               </Link>
             </NavigationMenuItem>
@@ -41,7 +43,7 @@ export default function Navbar() {
               <NavigationMenuItem>
                 <Link href="/dashboard">
                   <Button variant="ghost" className="text-sm font-medium">
-                    Dashboard
+                    <LayoutDashboardIcon></LayoutDashboardIcon>Dashboard
                   </Button>
                 </Link>
               </NavigationMenuItem>
@@ -58,8 +60,9 @@ export default function Navbar() {
               </Button>
             </Link>
           ) : (
-            <div>
-              <p></p>
+            <div className="flex items-center gap-2">
+              <UserIcon className="h-4 w-4 mr-2" />
+              {user?.email}
               <Button variant="outline" onClick={handleLogout}>
                 <LogOutIcon className="h-4 w-4 mr-2" />
                 Logout
@@ -91,10 +94,13 @@ export default function Navbar() {
                     </Button>
                   </Link>
                 ) : (
-                  <Button variant="outline" onClick={handleLogout}>
-                    <LogOutIcon className="h-4 w-4 mr-2" />
-                    Logout
-                  </Button>
+                  <div>
+                    <Button variant="outline" onClick={handleLogout}>
+                      <LogOutIcon className="h-4 w-4 mr-2" />
+                      Logout
+                    </Button>
+                    <p>{session.user?.id}</p>
+                  </div>
                 )}
               </nav>
             </SheetContent>

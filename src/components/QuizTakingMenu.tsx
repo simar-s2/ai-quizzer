@@ -17,6 +17,11 @@ import type { Quiz } from "@/app/types";
 import { exportQuizQuestions } from "@/lib/quizExport";
 import { exportQuizMarkscheme } from "@/lib/quizExport";
 import { Label } from "./ui/label";
+import { useQuizStore } from "@/store/useQuizStore";
+import { finishQuiz } from "@/lib/supabase/finishQuiz";
+import type { Answer } from "@/app/types";
+import { v4 as uuidv4 } from "uuid";
+import { useAuth } from "@/components/AuthProvider";
 
 /* ----------------------------- Helpers ----------------------------- */
 
@@ -211,10 +216,20 @@ export default function QuizTakingMenu({
   questions: QuizQuestion[];
   quiz: Quiz;
 }) {
+  const { session, user, supabase, loading } = useAuth();
+  const addAnswer = useQuizStore((state) => state.addAnswer);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState<Record<number, string>>({});
   const [results, setResults] = useState<Record<number, Mark>>({});
 
+  if (loading) return <p>Loading...</p>;
+  if (!session || !user) {
+    return (
+      <div className="p-4">
+        <p className="text-red-500">You must be logged in to take this quiz.</p>
+      </div>
+    );
+  }
   const currentQuestion = questions[currentIndex];
   const isMarked = results[currentIndex] !== undefined;
   const normalizedCorrect =
@@ -223,32 +238,58 @@ export default function QuizTakingMenu({
   const handleChange = useCallback(
     (val: string) => {
       setResponses((prev) => ({ ...prev, [currentIndex]: val }));
+
+      const answerObj: Answer = {
+        id: uuidv4(),
+        user_id: user?.id, // or get from session
+        quiz_id: quiz.id ?? "",
+        question_id: currentQuestion.id ?? "",
+        user_answer: val,
+        is_correct: false, // updated when marking
+      };
+      addAnswer(answerObj);
     },
-    [currentIndex]
+    [currentIndex, quiz, currentQuestion, addAnswer]
   );
 
   const handleMark = useCallback(() => {
     const userAnswer = normalize(responses[currentIndex]);
+    let mark: Mark = "unknown";
+    let correct = false;
 
-    setResults((prev) => {
-      let mark: Mark = "unknown";
-
-      if (isAutoMarkable(currentQuestion)) {
-        if (!userAnswer) {
-          mark = "unknown";
-        } else {
-          mark = userAnswer === normalizedCorrect ? "correct" : "incorrect";
-        }
-      } else if (
-        currentQuestion.type === "essay" ||
-        currentQuestion.type === "shortanswer"
-      ) {
-        mark = "manual";
+    if (isAutoMarkable(currentQuestion)) {
+      if (!userAnswer) {
+        mark = "unknown";
+      } else {
+        correct = userAnswer === normalizedCorrect;
+        mark = correct ? "correct" : "incorrect";
       }
+    } else if (
+      currentQuestion.type === "essay" ||
+      currentQuestion.type === "shortanswer"
+    ) {
+      mark = "manual";
+    }
 
-      return { ...prev, [currentIndex]: mark };
+    setResults((prev) => ({ ...prev, [currentIndex]: mark }));
+
+    // update store answer correctness
+    addAnswer({
+      id: uuidv4(),
+      user_id: user?.id, // or get from session
+      quiz_id: quiz.id ?? "",
+      question_id: currentQuestion.id ?? "",
+      user_answer: responses[currentIndex],
+      is_correct: correct,
     });
-  }, [currentIndex, currentQuestion, responses, normalizedCorrect]);
+  }, [
+    currentIndex,
+    currentQuestion,
+    responses,
+    normalizedCorrect,
+    quiz,
+    addAnswer,
+  ]);
 
   const goTo = useCallback(
     (i: number) => {
@@ -411,6 +452,19 @@ export default function QuizTakingMenu({
           🧠 Check Answer
         </Button>
       </CardFooter>
+      ${
+        currentIndex === questions.length - 1 && quiz.id && (
+          <Button
+            variant="default"
+            onClick={async () => {
+              await finishQuiz(quiz.id || "");
+              alert("Quiz submitted successfully!");
+            }}
+          >
+            Submit Quiz
+          </Button>
+        )
+      }
       <Button
         variant="outline"
         onClick={() => exportQuizQuestions(questions, quiz)}

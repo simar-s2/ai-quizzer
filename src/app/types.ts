@@ -26,3 +26,13 @@ export type Quiz = {
   updated_at?: string;
   difficulty?: "easy" | "medium" | "hard" | "expert";
 };
+
+export type Answer = {
+  id?: string;
+  user_id: string;
+  quiz_id: string;
+  question_id: string;
+  user_answer: string;
+  is_correct: boolean;
+  created_at?: string;
+};

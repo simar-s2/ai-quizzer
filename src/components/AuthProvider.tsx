@@ -1,4 +1,3 @@
-// src/providers/AuthProvider.tsx
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -16,29 +15,29 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export default function AuthProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get current session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
+    let mounted = true;
+
+    const getInitialSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (mounted) {
+        setSession(data.session);
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
     });
 
-    // Listen for auth state changes
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-      }
-    );
-
     return () => {
+      mounted = false;
       listener.subscription.unsubscribe();
     };
   }, []);
@@ -52,11 +51,8 @@ export default function AuthProvider({
   );
 }
 
-// Custom hook
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }

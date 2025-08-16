@@ -37,9 +37,10 @@ import {
 } from "@/components/ui/table";
 
 import { Quiz } from "../app/types";
-const data: Quiz[] = [];
 
-export const columns: ColumnDef<Quiz>[] = [
+export const getColumns = (
+  onStartQuiz: (id: string) => void
+): ColumnDef<Quiz>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -138,23 +139,33 @@ export const columns: ColumnDef<Quiz>[] = [
     cell: ({ row }) => {
       const quiz = row.original;
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(quiz.id || "")}
-            >
-              Copy Quiz ID
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => console.log("View quiz", quiz.id)}>
-              View Quiz
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => onStartQuiz(quiz.id!)} size="sm">
+            Start Quiz
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>View Quiz</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => console.log("Share quiz", quiz.id)}
+              >
+                Share
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => console.log("Delete quiz", quiz.id)}
+                className="text-red-600"
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
   },
