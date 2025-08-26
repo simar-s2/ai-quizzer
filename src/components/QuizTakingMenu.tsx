@@ -16,7 +16,6 @@ import type { QuizQuestion } from "@/app/types";
 import type { Quiz } from "@/app/types";
 import { exportQuizQuestions } from "@/lib/quizExport";
 import { exportQuizMarkscheme } from "@/lib/quizExport";
-import { Label } from "./ui/label";
 import { useQuizStore } from "@/store/useQuizStore";
 import { finishQuiz } from "@/lib/supabase/finishQuiz";
 import type { Answer } from "@/app/types";
@@ -452,7 +451,7 @@ export default function QuizTakingMenu({
           🧠 Check Answer
         </Button>
       </CardFooter>
-      ${
+      {
         currentIndex === questions.length - 1 && quiz.id && (
           <Button
             variant="default"

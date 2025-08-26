@@ -1,5 +1,6 @@
+"use server";
 
-import { createClient } from "./server";
+import { createClient } from "./server"; // Supabase client with cookies support
 import { Quiz, QuizQuestion } from "@/app/types";
 
 export async function saveQuiz(quiz: Quiz, questions: QuizQuestion[]) {
