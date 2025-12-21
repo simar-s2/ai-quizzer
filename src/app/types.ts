@@ -9,6 +9,7 @@ export type QuizQuestion = {
   created_at?: string;
   updated_at?: string;
   answer: string;
+  marks: number;
 };
 
 export type Quiz = {
@@ -21,10 +22,11 @@ export type Quiz = {
   status?: "not_started" | "in_progress" | "completed";
   total_time?: number;
   tags?: string[];
-  metadata?: Record<string, any>; // Optional, see below
+  metadata?: Record<string, any>;
   created_at?: string;
   updated_at?: string;
   difficulty?: "easy" | "medium" | "hard" | "expert";
+  total_marks?: number;
 };
 
 export type Answer = {
@@ -35,4 +37,5 @@ export type Answer = {
   user_answer: string;
   is_correct: boolean;
   created_at?: string;
+  score?: number;
 };

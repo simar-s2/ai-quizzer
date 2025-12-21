@@ -71,8 +71,8 @@ export default function Home() {
       })
       const data = await res.json()
       console.log(data.quiz)
-      setquestions(Array.isArray(data.questions) ? data.questions : [])
-      setQuiz(data.quiz ? data.quiz : {})
+      setquestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
+      setQuiz(data.quiz.quiz ? data.quiz.quiz : {})
     } catch (e) {
       console.error(e)
     } finally {
@@ -257,7 +257,7 @@ export default function Home() {
                   <Button variant="outline" onClick={() =>
                     {
                       exportQuizQuestions(questions, quiz);
-                      saveQuiz(quiz, questions);
+                      if (quiz) saveQuiz(quiz, questions);
                       toast.success("Quiz exported and saved successfully!");
                     } 
                     }>

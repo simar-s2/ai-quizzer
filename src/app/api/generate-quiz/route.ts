@@ -93,6 +93,7 @@ async function generateQuiz({
             "options": ["string"],
             "answer": "string",
             "explanation": "string"
+            "marks": "mcq": 1, "fill": 2, "truefalse": 1, "shortanswer": 4, "essay": 8;
           }
         ]
       }

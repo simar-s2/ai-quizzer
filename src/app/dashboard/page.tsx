@@ -7,7 +7,7 @@ import { DataTable, getColumns } from "@/components/dataTable";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Spinner from "@/components/Spinner"; // Assuming you have a Spinner component
+import Spinner from "@/components/spinner"; // Assuming you have a Spinner component
 
 const quizCache: Quiz[] = [];
 
