@@ -1,11 +1,10 @@
 "use server";
+import { createServerSupabaseClient } from "./server";
+import { Quiz, Question, QuizInsert, QuestionInsert } from "@/lib/supabase/client";
 
-import { createClient } from "./server"; // Supabase client with cookies support
-import { Quiz, QuizQuestion } from "@/app/types";
-
-export async function saveQuiz(quiz: Quiz, questions: QuizQuestion[]) {
-  const supabase = await createClient();
-
+export async function saveQuiz(quiz: Quiz, questions: Question[]): Promise<string> {
+  const supabase = await createServerSupabaseClient();
+  
   // 🔐 Get current user from the server session
   const {
     data: { user },
@@ -16,31 +15,51 @@ export async function saveQuiz(quiz: Quiz, questions: QuizQuestion[]) {
     throw new Error("No authenticated user found");
   }
 
-  // Prepare quiz payload
-  const { ...sanitizedQuiz } = quiz as any;
-  const quiz_upload = { ...sanitizedQuiz, user_id: user.id };
+  // Prepare quiz payload with proper types
+  const quizInsert: QuizInsert = {
+    title: quiz.title,
+    description: quiz.description,
+    subject: quiz.subject,
+    tags: quiz.tags,
+    difficulty: quiz.difficulty,
+    user_id: user.id,
+    total_marks: quiz.total_marks,
+    total_time: quiz.total_time,
+    status: quiz.status ?? "not_started",
+    visibility: quiz.visibility ?? "private",
+    metadata: quiz.metadata,
+  };
 
   // Insert quiz
   const { data: insertedQuiz, error: quizError } = await supabase
     .from("quizzes")
-    .insert([quiz_upload])
+    .insert(quizInsert)
     .select()
     .single();
 
-  if (quizError) throw quizError;
+  if (quizError || !insertedQuiz) {
+    throw new Error(`Failed to save quiz: ${quizError?.message}`);
+  }
 
-  // Insert questions
-  const enrichedQuestions = questions.map((q) => ({
-    ...q,
+  // Prepare questions with proper types
+  const questionsInsert: QuestionInsert[] = questions.map((q) => ({
     quiz_id: insertedQuiz.id,
+    question_text: q.question_text,
+    type: q.type,
+    options: q.options,
+    answer: q.answer,
+    explanation: q.explanation,
+    marks: q.marks ?? 1,
+    visibility: q.visibility ?? "private",
   }));
 
+  // Insert questions
   const { error: questionError } = await supabase
     .from("questions")
-    .insert(enrichedQuestions);
+    .insert(questionsInsert);
 
   if (questionError) {
-    throw questionError;
+    throw new Error(`Failed to save questions: ${questionError.message}`);
   }
 
   return insertedQuiz.id;

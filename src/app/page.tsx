@@ -4,8 +4,7 @@ import { useState } from "react";
 import QuizPreview from "@/components/QuizPreview";
 import Spinner from "@/components/spinner";
 import QuizSettings from "@/components/QuizSettings";
-import type { QuizQuestion } from "@/app/types";
-import type { Quiz } from "@/app/types";
+import { Quiz, Question } from "@/lib/supabase/client";
 import { saveQuiz } from "@/lib/supabase/saveQuiz";
 import {
   Card,
@@ -20,21 +19,20 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils"; // optional helper if you have it
-import {exportQuizMarkscheme, exportQuizQuestions } from '../lib/quizExport';
+import { exportQuizMarkscheme, exportQuizQuestions } from "@/lib/quizExport";
 import { useAuth } from "@/components/AuthProvider";
-import { toast } from 'sonner';
-import { Link } from "lucide-react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
   // State
-  const [questions, setquestions] = useState<QuizQuestion[]>([]);
-  const [quiz, setQuiz] = useState<Quiz>();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(false);
   const [quizSettings, setQuizSettings] = useState({
     difficulty: "medium",
     numQuestions: 5,
+    topic: "",
     type: {
       selectedTypes: [],
       distribution: {
@@ -46,11 +44,10 @@ export default function Home() {
       },
     },
   });
-  // Router
+
+  // Router and Auth
   const router = useRouter();
-  const user_id = useAuth().user?.id;
-
-
+  const { user } = useAuth();
 
   // Local form state
   const [rawText, setRawText] = useState("");
@@ -58,50 +55,65 @@ export default function Home() {
 
   // Actions
   const handleTextSubmit = async () => {
-    if (!rawText.trim()) return
-    setquestions([])
-    setQuiz(undefined)
-    setLoading(true)
-  
+    if (!rawText.trim()) return;
+    setQuestions([]);
+    setQuiz(null);
+    setLoading(true);
+
     try {
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: rawText, settings: quizSettings }),
-      })
-      const data = await res.json()
-      console.log(data.quiz)
-      setquestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
-      setQuiz(data.quiz.quiz ? data.quiz.quiz : {})
+      });
+      const data = await res.json();
+      
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      setQuestions(Array.isArray(data.questions) ? data.questions : []);
+      setQuiz(data.quiz ?? null);
+      toast.success("Quiz generated successfully!");
     } catch (e) {
-      console.error(e)
+      console.error(e);
+      toast.error("Failed to generate quiz");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
-  
+
   const handlePdfUpload = async () => {
-    if (!files.length) return
-    setquestions([])
-    setQuiz(undefined)
-    setLoading(true)
-  
+    if (!files.length) return;
+    setQuestions([]);
+    setQuiz(null);
+    setLoading(true);
+
     try {
-      const formData = new FormData()
-      files.forEach((file) => formData.append("files", file))
-      formData.append("settings", JSON.stringify(quizSettings))
-  
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+      formData.append("settings", JSON.stringify(quizSettings));
+
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
         body: formData,
-      })
-      const data = await res.json()
-      setquestions(Array.isArray(data.quiz.questions) ? data.quiz.questions : [])
-      setQuiz(data.quiz.quiz ? data.quiz.quiz : {})
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      setQuestions(Array.isArray(data.questions) ? data.questions : []);
+      setQuiz(data.quiz ?? null);
+      toast.success("Quiz generated successfully!");
     } catch (e) {
-      console.error(e)
+      console.error(e);
+      toast.error("Failed to generate quiz");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -110,9 +122,7 @@ export default function Home() {
       {/* Hero */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         <div className="max-w-2xl">
-          <h1>
-            Generate quizzes from your documents or notes
-          </h1>
+          <h1 className="text-4xl font-bold">Generate quizzes from your documents or notes</h1>
           <p className="mt-2 text-slate-600">
             Upload PDFs or paste text. Tune settings. Preview instantly.
           </p>
@@ -154,7 +164,10 @@ export default function Home() {
                     </div>
                     <CardFooter className="px-0 pt-4">
                       <div className="flex items-center gap-3">
-                        <Button onClick={handleTextSubmit} disabled={loading || !rawText.trim()}>
+                        <Button
+                          onClick={handleTextSubmit}
+                          disabled={loading || !rawText.trim()}
+                        >
                           {loading ? "Generating..." : "Generate quiz"}
                         </Button>
                         <span className="text-xs text-muted-foreground">
@@ -174,7 +187,9 @@ export default function Home() {
                           type="file"
                           multiple
                           accept=".pdf"
-                          onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                          onChange={(e) =>
+                            setFiles(Array.from(e.target.files || []))
+                          }
                         />
                         <p className="text-xs text-muted-foreground mt-2">
                           You can select multiple PDFs.
@@ -188,7 +203,10 @@ export default function Home() {
                     </div>
                     <CardFooter className="px-0 pt-4">
                       <div className="flex items-center gap-3">
-                        <Button onClick={handlePdfUpload} disabled={loading || files.length === 0}>
+                        <Button
+                          onClick={handlePdfUpload}
+                          disabled={loading || files.length === 0}
+                        >
                           {loading ? "Generating..." : "Generate quiz"}
                         </Button>
                         <span className="text-xs text-muted-foreground">
@@ -242,7 +260,7 @@ export default function Home() {
                     <div className="flex items-center justify-center py-12">
                       <Spinner />
                     </div>
-                  ) : questions.length > 0 && quiz !== undefined ? (
+                  ) : questions.length > 0 && quiz ? (
                     <QuizPreview questions={questions} quiz={quiz} />
                   ) : (
                     <EmptyPreviewState />
@@ -251,74 +269,71 @@ export default function Home() {
               </Card>
 
               {/* Optional: Actions */}
-              {questions.length > 0 && (
-                <div className="flex gap-2">
-
-                  <Button variant="outline" onClick={() =>
-                    {
+              {questions.length > 0 && quiz && (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
                       exportQuizQuestions(questions, quiz);
-                      if (quiz) saveQuiz(quiz, questions);
-                      toast.success("Quiz exported and saved successfully!");
-                    } 
-                    }>
+                      toast.success("Quiz exported successfully!");
+                    }}
+                  >
                     Export Quiz
                   </Button>
-                  <Button variant="outline" onClick={() => exportQuizMarkscheme(questions, quiz)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      exportQuizMarkscheme(questions, quiz);
+                      toast.success("Markscheme exported successfully!");
+                    }}
+                  >
                     Export Markscheme
                   </Button>
 
-                  {user_id && quiz && (
-                    <Button
-                      disabled={loading}
-                      onClick={async () => {
-                        if (!user_id) {
-                          console.error("User ID is null or undefined");
-                          return;
-                        }
-                        if (!quiz) {
-                          console.error("Quiz is null or undefined");
-                          return;
-                        }
-                        setLoading(true);
-                        try {
-                          const id = await saveQuiz(quiz, questions);
-                          if (!id) {
-                            console.error("No quiz ID returned from saveQuiz");
-                            return;
+                  {user && (
+                    <>
+                      <Button
+                        disabled={loading}
+                        onClick={async () => {
+                          setLoading(true);
+                          try {
+                            const id = await saveQuiz(quiz, questions);
+                            if (!id) {
+                              throw new Error("No quiz ID returned");
+                            }
+                            toast.success("🎯 Quiz started!");
+                            router.push(`/quiz/${id}`);
+                          } catch (err) {
+                            toast.error("💔 Could not start quiz!");
+                            console.error("Start quiz failed:", err);
+                          } finally {
+                            setLoading(false);
                           }
-                          toast.success("🎯 Quiz started!");
-                          router.push(`/quiz/${id}`);
-                        } catch (err) {
-                          toast.error("💔 Could not start quiz!");
-                          console.error("Start quiz failed:", err);
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                    >
-                      {loading ? "Starting…" : "Start Quiz"}
-                    </Button>
-                  )}
-                  
-                  {user_id && quiz && (<Button
-                    disabled={loading}
-                    onClick={async () => {
-                      setLoading(true);
-                      try {
-                        await saveQuiz(quiz, questions);
-                        toast.success("🎉 Quiz saved!");
-                      } catch (err) {
-                        toast.error("💩 Quiz save failed!");
-                        console.error('Save failed:', err);
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                  >
-                    {loading ? 'Saving…' : 'Save Quiz'}
-                  </Button>
-                  )}
+                        }}
+                      >
+                        {loading ? "Starting…" : "Start Quiz"}
+                      </Button>
 
+                      <Button
+                        variant="outline"
+                        disabled={loading}
+                        onClick={async () => {
+                          setLoading(true);
+                          try {
+                            await saveQuiz(quiz, questions);
+                            toast.success("🎉 Quiz saved!");
+                          } catch (err) {
+                            toast.error("💩 Quiz save failed!");
+                            console.error("Save failed:", err);
+                          } finally {
+                            setLoading(false);
+                          }
+                        }}
+                      >
+                        {loading ? "Saving…" : "Save Quiz"}
+                      </Button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

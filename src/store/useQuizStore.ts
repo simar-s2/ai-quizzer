@@ -1,11 +1,11 @@
 // store/useQuizStore.ts
 import { create } from "zustand";
-import type { Answer } from "@/app/types";
+import { AnswerInsert } from "@/lib/supabase/client";
 
 type QuizState = {
-  answers: Answer[];
-  addAnswer: (answer: Answer) => void;
-  resetAnswers: () => void;
+  answers: AnswerInsert[];
+  addAnswer: (answer: AnswerInsert) => void;
+  clearAnswers: () => void;
 };
 
 export const useQuizStore = create<QuizState>((set) => ({
@@ -23,5 +23,5 @@ export const useQuizStore = create<QuizState>((set) => ({
       }
       return { answers: [...state.answers, answer] };
     }),
-  resetAnswers: () => set({ answers: [] }),
+  clearAnswers: () => set({ answers: [] }),
 }));

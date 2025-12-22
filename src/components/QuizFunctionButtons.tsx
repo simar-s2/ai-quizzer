@@ -1,9 +1,9 @@
 "use client";
-import React, { use } from "react";
+import React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { exportQuizQuestions, exportQuizMarkscheme } from "../lib/quizExport";
-import { Quiz, QuizQuestion } from "../app/types";
+import { Quiz, Question } from "@/lib/supabase/client";
 import { saveQuiz } from "../lib/supabase/saveQuiz";
 import { toast } from "sonner";
 import { useAuth } from "../components/AuthProvider";
@@ -14,16 +14,15 @@ export function ExportQuizButtons({
   questions,
 }: {
   quiz: Quiz;
-  questions: QuizQuestion[];
+  questions: Question[];
 }) {
   return (
-    <div>
+    <div className="flex gap-2">
       <Button
         variant="outline"
         onClick={() => {
           exportQuizQuestions(questions, quiz);
-          if (quiz && questions) saveQuiz(quiz, questions);
-          toast.success("Quiz exported and saved successfully!");
+          toast.success("Quiz exported successfully!");
         }}
       >
         Export Quiz
@@ -43,30 +42,29 @@ export function QuizStartButton({
   questions,
 }: {
   quiz: Quiz;
-  questions: QuizQuestion[];
+  questions: Question[];
 }) {
   const router = useRouter();
-  const { supabase, user } = useAuth();
-  const user_id = user?.id;
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+
   return (
     <Button
       disabled={loading}
       onClick={async () => {
-        if (!user_id) {
-          console.error("User ID is null or undefined");
+        if (!user) {
+          toast.error("Please log in to start the quiz");
           return;
         }
-        if (!quiz) {
-          console.error("Quiz is null or undefined");
+        if (!quiz || !questions.length) {
+          toast.error("Quiz data is incomplete");
           return;
         }
         setLoading(true);
         try {
           const id = await saveQuiz(quiz, questions);
           if (!id) {
-            console.error("No quiz ID returned from saveQuiz");
-            return;
+            throw new Error("No quiz ID returned");
           }
           toast.success("🎯 Quiz started!");
           router.push(`/quiz/${id}`);
@@ -88,13 +86,19 @@ export function QuizSaveButton({
   questions,
 }: {
   quiz: Quiz;
-  questions: QuizQuestion[];
+  questions: Question[];
 }) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+
   return (
     <Button
       disabled={loading}
       onClick={async () => {
+        if (!user) {
+          toast.error("Please log in to save the quiz");
+          return;
+        }
         setLoading(true);
         try {
           await saveQuiz(quiz, questions);

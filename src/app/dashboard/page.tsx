@@ -1,38 +1,42 @@
 "use client";
-
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Quiz } from "@/app/types";
+import { createClient, Quiz } from "@/lib/supabase/client";
 import { DataTable, getColumns } from "@/components/dataTable";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Spinner from "@/components/spinner"; // Assuming you have a Spinner component
+import Spinner from "@/components/spinner";
 
 const quizCache: Quiz[] = [];
 
 export default function QuizzesPage() {
   const router = useRouter();
-  const supabase = useRef(createClient()).current; // stable ref so it doesn't trigger useEffect
+  const supabase = useRef(createClient()).current;
   const [quizzes, setQuizzes] = useState<Quiz[]>(quizCache);
   const [loading, setLoading] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    if (hasFetched.current) return; // prevent re-fetch
+    if (hasFetched.current) return;
+    
     if (!authLoading) {
       if (quizCache.length === 0 && user) {
         hasFetched.current = true;
         setLoading(true);
+        
         supabase
           .from("quizzes")
           .select("*")
           .order("created_at", { ascending: false })
           .then(({ data, error }) => {
             if (!error && data) {
-              quizCache.splice(0, quizCache.length, ...data); // update cache
-              setQuizzes(data);
+              quizCache.splice(0, quizCache.length, ...data);
+              setQuizzes(data); // data is now typed as Quiz[]
+            } else if (error) {
+              toast.error("Failed to load quizzes", {
+                description: error.message,
+              });
             }
             setLoading(false);
           });
@@ -44,12 +48,18 @@ export default function QuizzesPage() {
         setQuizzes([]);
       }
     }
-  }, [authLoading, user]);
+  }, [authLoading, user, supabase]);
 
-  if (loading || authLoading) return (<div>
-    <p>Loading quizzes</p>
-    <Spinner></Spinner>
-  </div>);
+  if (loading || authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="mb-4">Loading quizzes</p>
+          <Spinner />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4">
@@ -60,4 +70,3 @@ export default function QuizzesPage() {
     </div>
   );
 }
-

@@ -36,7 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { Quiz } from "../app/types";
+import { Quiz } from "@/lib/supabase/client"; // ✅ Import from Supabase client
 
 export const getColumns = (
   onStartQuiz: (id: string) => void
@@ -66,9 +66,12 @@ export const getColumns = (
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("status") || "-"}</div>
-    ),
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string | null;
+      return (
+        <div className="capitalize">{status?.replace("_", " ") ?? "Not Started"}</div>
+      );
+    },
   },
   {
     accessorKey: "title",
@@ -96,7 +99,7 @@ export const getColumns = (
     accessorKey: "tags",
     header: "Tags",
     cell: ({ row }) => {
-      const tags = row.getValue("tags") as string[] | undefined;
+      const tags = row.getValue("tags") as string[] | null;
       return (
         <div className="flex flex-wrap gap-1">
           {tags?.map((tag, i) => (
@@ -106,7 +109,7 @@ export const getColumns = (
             >
               {tag}
             </span>
-          )) || "-"}
+          )) ?? "-"}
         </div>
       );
     },
@@ -123,7 +126,7 @@ export const getColumns = (
       </Button>
     ),
     cell: ({ row }) => {
-      const date = row.getValue("created_at") as string | undefined;
+      const date = row.getValue("created_at") as string | null;
       return date ? new Date(date).toLocaleDateString() : "-";
     },
   },
@@ -140,7 +143,7 @@ export const getColumns = (
       const quiz = row.original;
       return (
         <div className="flex items-center gap-2">
-          <Button onClick={() => onStartQuiz(quiz.id!)} size="sm">
+          <Button onClick={() => onStartQuiz(quiz.id)} size="sm">
             Start Quiz
           </Button>
 

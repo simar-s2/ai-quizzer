@@ -1,11 +1,36 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI, Type, createPartFromUri } from "@google/genai";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { 
+  QuizInsert, 
+  QuestionInsert, 
+  DifficultyLevel, 
+  QuestionType 
+} from "@/lib/supabase/client";
 
 const client = new GoogleGenAI({
   apiKey: process.env.GOOGLE_API_KEY || "",
 });
 
-// Helper to clean Gemini's response
+// Type for Gemini response
+interface GeminiQuizResponse {
+  quiz: {
+    title: string;
+    description: string;
+    subject: string;
+    tags: string[];
+    difficulty: DifficultyLevel;
+  };
+  questions: Array<{
+    type: QuestionType;
+    question_text: string;
+    options?: string[];
+    answer: string;
+    explanation: string;
+    marks?: number;
+  }>;
+}
+
 function cleanGeminiResponse(text: string): string {
   let cleaned = text
     .replace(/```json/gi, "")
@@ -19,7 +44,6 @@ function cleanGeminiResponse(text: string): string {
   return cleaned;
 }
 
-// Helper to upload and wait for file processing
 async function uploadAndWait(fileBlob: Blob, displayName: string) {
   const file = await client.files.upload({
     file: fileBlob,
@@ -40,7 +64,6 @@ async function uploadAndWait(fileBlob: Blob, displayName: string) {
   return getFile;
 }
 
-// Core Gemini function
 async function generateQuiz({
   files,
   text,
@@ -51,14 +74,14 @@ async function generateQuiz({
 }: {
   files?: { uri: string; mimeType: string }[];
   text?: string;
-  difficulty?: string;
+  difficulty?: DifficultyLevel;
   numQuestions?: number;
   type?: {
-    selectedTypes: string[];
+    selectedTypes: QuestionType[];
     distribution: Record<string, number>;
   };
   topic?: string;
-}) {
+}): Promise<GeminiQuizResponse> {
   const distributionText =
     Object.keys(type.distribution).length > 0
       ? Object.entries(type.distribution)
@@ -67,38 +90,38 @@ async function generateQuiz({
       : "evenly distributed";
 
   const basePrompt = `
-      You are an expert quiz creator. Produce exactly ${numQuestions} 
-      ${difficulty}-level quiz questions on the subject "${topic}" 
-      based on the ${files ? "uploaded PDF documents" : "following text"} below:
-      ${text || "(no inline text provided)"}
-      
-      Use this distribution of question types: ${distributionText}.
-      Allow only these types: ${type.selectedTypes.join(", ")}.
-      
-      Respond with a single JSON object matching this schema exactly 
-      (no extra keys, no markdown, no commentary):
-      
-      {
-        "quiz": {
-          "title": "string",
-          "description": "string",
-          "subject": "string",
-          "tags": ["string"],
-          "difficulty": "easy" | "medium" | "hard" | "expert"
-        },
-        "questions": [
-          {
-            "type": "mcq" | "fill" | "truefalse" | "shortanswer" | "essay",
-            "question_text": "string",
-            "options": ["string"],
-            "answer": "string",
-            "explanation": "string"
-            "marks": "mcq": 1, "fill": 2, "truefalse": 1, "shortanswer": 4, "essay": 8;
-          }
-        ]
-      }
-      Output JSON only.
-      `.trim();
+    You are an expert quiz creator. Produce exactly ${numQuestions} 
+    ${difficulty}-level quiz questions on the subject "${topic}" 
+    based on the ${files ? "uploaded PDF documents" : "following text"} below:
+    ${text || "(no inline text provided)"}
+    
+    Use this distribution of question types: ${distributionText}.
+    Allow only these types: ${type.selectedTypes.join(", ")}.
+    
+    Respond with a single JSON object matching this schema exactly 
+    (no extra keys, no markdown, no commentary):
+    
+    {
+      "quiz": {
+        "title": "string",
+        "description": "string",
+        "subject": "string",
+        "tags": ["string"],
+        "difficulty": "easy" | "medium" | "hard" | "expert"
+      },
+      "questions": [
+        {
+          "type": "mcq" | "fill" | "truefalse" | "shortanswer" | "essay",
+          "question_text": "string",
+          "options": ["string"],
+          "answer": "string",
+          "explanation": "string",
+          "marks": number
+        }
+      ]
+    }
+    Output JSON only.
+  `.trim();
 
   const parts: any[] = [{ text: basePrompt }];
 
@@ -149,6 +172,7 @@ async function generateQuiz({
                 },
                 answer: { type: Type.STRING },
                 explanation: { type: Type.STRING },
+                marks: { type: Type.NUMBER },
               },
               required: ["type", "question_text", "answer", "explanation"],
             },
@@ -160,24 +184,31 @@ async function generateQuiz({
   });
 
   const cleaned = cleanGeminiResponse(response.text || "");
-  let parsed;
   try {
-    parsed = JSON.parse(cleaned) as {
-      metadata: { [k: string]: any };
-      questions: any[];
-    };
+    const parsed = JSON.parse(cleaned) as GeminiQuizResponse;
+    return parsed;
   } catch (e) {
     console.error("Failed to parse Gemini response:", cleaned, e);
-    // Fallback: empty object so your route still returns valid JSON
-    parsed = { metadata: null, questions: [] };
+    throw new Error("Failed to parse AI response");
   }
-
-  return parsed;
 }
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createServerSupabaseClient();
+    
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const contentType = req.headers.get("content-type") || "";
+    let geminiResponse: GeminiQuizResponse;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
@@ -206,21 +237,80 @@ export async function POST(req: Request) {
         }
       }
 
-      const quiz = await generateQuiz({
+      geminiResponse = await generateQuiz({
         files: uploadedFiles,
         ...settingsJson,
       });
-      return NextResponse.json({ quiz });
     } else {
-      // Handle JSON text input
       const { text, settings } = await req.json();
-      const quiz = await generateQuiz({ text, ...settings });
-      return NextResponse.json({ quiz });
+      geminiResponse = await generateQuiz({ text, ...settings });
     }
+
+    // Save to database with proper types
+    const quizInsert: QuizInsert = {
+      title: geminiResponse.quiz.title,
+      description: geminiResponse.quiz.description,
+      subject: geminiResponse.quiz.subject,
+      tags: geminiResponse.quiz.tags,
+      difficulty: geminiResponse.quiz.difficulty,
+      user_id: user.id,
+      status: "not_started",
+      visibility: "private",
+    };
+
+    const { data: quiz, error: quizError } = await supabase
+      .from("quizzes")
+      .insert(quizInsert)
+      .select()
+      .single();
+
+    if (quizError || !quiz) {
+      throw new Error("Failed to save quiz");
+    }
+
+    // Calculate total marks
+    const totalMarks = geminiResponse.questions.reduce(
+      (sum, q) => sum + (q.marks || 1), 
+      0
+    );
+
+    // Update total marks
+    await supabase
+      .from("quizzes")
+      .update({ total_marks: totalMarks })
+      .eq("id", quiz.id);
+
+    // Save questions with proper types
+    const questionsInsert: QuestionInsert[] = geminiResponse.questions.map((q) => ({
+      quiz_id: quiz.id,
+      type: q.type,
+      question_text: q.question_text,
+      options: q.options || null,
+      answer: q.answer,
+      explanation: q.explanation,
+      marks: q.marks || 1,
+      visibility: "private",
+    }));
+
+    const { data: questions, error: questionsError } = await supabase
+      .from("questions")
+      .insert(questionsInsert)
+      .select();
+
+    if (questionsError) {
+      throw new Error("Failed to save questions");
+    }
+
+    return NextResponse.json({ 
+      quiz, 
+      questions,
+      message: "Quiz created successfully" 
+    });
+    
   } catch (err: any) {
     console.error("Error generating quiz:", err);
     return NextResponse.json(
-      { error: "Failed to generate quiz" },
+      { error: err.message || "Failed to generate quiz" },
       { status: 500 }
     );
   }

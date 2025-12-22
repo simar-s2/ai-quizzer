@@ -1,11 +1,10 @@
 import { jsPDF } from "jspdf";
-import type { QuizQuestion } from "@/app/types";
-import type { Quiz } from "@/app/types";
+import { Quiz, Question } from "@/lib/supabase/client";
 
 export function exportQuizQuestions(
-  questions: QuizQuestion[],
-  quiz = {} as Quiz,
-  filename = `${quiz.title}.pdf`
+  questions: Question[],
+  quiz: Quiz,
+  filename?: string
 ) {
   const doc = new jsPDF();
   const margin = 20;
@@ -21,7 +20,7 @@ export function exportQuizQuestions(
   doc.setFontSize(11);
   doc.setFont("Arial", "normal");
   const descriptionLines = doc.splitTextToSize(
-    quiz.description ? quiz.description : "No description provided.",
+    quiz.description ?? "No description provided.",
     maxWidth
   );
   doc.text(descriptionLines, margin, y);
@@ -41,15 +40,16 @@ export function exportQuizQuestions(
     doc.setFont("Arial", "bold");
     wrappedQuestion.forEach((line: string, idx: number) => {
       doc.text(line, margin, y);
-      if (idx === 0) doc.text("[1]", 180, y);
+      if (idx === 0) doc.text(`[${q.marks ?? 1}]`, 180, y);
       y += lineHeight;
     });
 
     doc.setFont("Arial", "normal");
 
     // Render options or answer space
-    if (q.options && q.options.length > 0) {
-      q.options.forEach((opt, idx) => {
+    const options = q.options as string[] | null;
+    if (options && options.length > 0) {
+      options.forEach((opt) => {
         doc.text(`   ${opt}`, margin + 4, y);
         y += lineHeight;
       });
@@ -85,13 +85,13 @@ export function exportQuizQuestions(
     y += lineHeight;
   });
 
-  doc.save(filename);
+  doc.save(filename ?? `${quiz.title}.pdf`);
 }
 
 export function exportQuizMarkscheme(
-  questions: QuizQuestion[],
-  quiz = {} as Quiz,
-  filename = `${quiz.title} markscheme.pdf`
+  questions: Question[],
+  quiz: Quiz,
+  filename?: string
 ) {
   const doc = new jsPDF();
   const margin = 20;
@@ -114,7 +114,7 @@ export function exportQuizMarkscheme(
     }
 
     const wrappedAnswer = doc.splitTextToSize(
-      `Q${i + 1}: ${q.answer}`,
+      `Q${i + 1}: ${q.answer ?? "No answer provided"}`,
       maxWidth
     );
     wrappedAnswer.forEach((line: string) => {
@@ -126,8 +126,23 @@ export function exportQuizMarkscheme(
       y += lineHeight;
     });
 
+    if (q.explanation) {
+      const wrappedExplanation = doc.splitTextToSize(
+        `Explanation: ${q.explanation}`,
+        maxWidth
+      );
+      wrappedExplanation.forEach((line: string) => {
+        if (y > 270) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(line, margin, y);
+        y += lineHeight;
+      });
+    }
+
     y += lineHeight;
   });
 
-  doc.save(filename);
+  doc.save(filename ?? `${quiz.title}_markscheme.pdf`);
 }

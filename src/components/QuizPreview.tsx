@@ -12,8 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "./ui/badge";
 import clsx from "clsx";
-import type { QuizQuestion } from "@/app/types";
-import type { Quiz } from "@/app/types";
+import { Quiz, Question } from "@/lib/supabase/client"; // ✅ Use Supabase types
 
 const TRUE_FALSE_OPTIONS = ["True", "False"] as const;
 
@@ -21,7 +20,7 @@ export default function QuizPreview({
   questions,
   quiz,
 }: {
-  questions: QuizQuestion[];
+  questions: Question[];
   quiz: Quiz;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -45,7 +44,8 @@ export default function QuizPreview({
   );
 
   const choiceOptions = useMemo(() => {
-    if (currentQuestion.type === "mcq") return currentQuestion.options;
+    const options = currentQuestion.options as string[] | null;
+    if (currentQuestion.type === "mcq") return options ?? [];
     if (currentQuestion.type === "truefalse") return [...TRUE_FALSE_OPTIONS];
     return null;
   }, [currentQuestion]);
@@ -158,12 +158,10 @@ export default function QuizPreview({
             variant="outline"
             onClick={() => goTo(currentIndex + 1)}
             disabled={currentIndex === questions.length - 1}
-          >
-            Next
+          >Next
           </Button>
         </div>
-        
       </CardFooter>
     </Card>
-  );
+    );
 }

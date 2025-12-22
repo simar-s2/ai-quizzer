@@ -1,21 +1,35 @@
-import { createClient } from "./client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { Quiz, Question } from "@/lib/supabase/client";
 
-const supabase = await createClient();
-export async function fetchQuizWithQuestions(quizId: string) {
+export async function fetchQuizWithQuestions(quizId: string): Promise<{
+  quiz: Quiz | null;
+  questions: Question[] | null;
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  // Fetch quiz
   const { data: quiz, error: quizError } = await supabase
     .from("quizzes")
     .select("*")
     .eq("id", quizId)
     .single();
 
-  if (quizError) throw quizError;
+  if (quizError) {
+    console.error("Error fetching quiz:", quizError);
+    return { quiz: null, questions: null };
+  }
 
-  const { data: questions, error: questionError } = await supabase
+  // Fetch questions for this quiz
+  const { data: questions, error: questionsError } = await supabase
     .from("questions")
     .select("*")
-    .eq("quiz_id", quizId);
+    .eq("quiz_id", quizId)
+    .order("created_at", { ascending: true });
 
-  if (questionError) throw questionError;
+  if (questionsError) {
+    console.error("Error fetching questions:", questionsError);
+    return { quiz, questions: null };
+  }
 
   return { quiz, questions };
 }

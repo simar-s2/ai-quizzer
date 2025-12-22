@@ -12,31 +12,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "./ui/badge";
 import clsx from "clsx";
-import type { QuizQuestion } from "@/app/types";
-import type { Quiz } from "@/app/types";
+import { Quiz, Question, AnswerInsert } from "@/lib/supabase/client"; // ✅ Use Supabase types
 import { exportQuizQuestions } from "@/lib/quizExport";
 import { exportQuizMarkscheme } from "@/lib/quizExport";
 import { useQuizStore } from "@/store/useQuizStore";
 import { finishQuiz } from "@/lib/supabase/finishQuiz";
-import type { Answer } from "@/app/types";
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/components/AuthProvider";
 
-/* ----------------------------- Helpers ----------------------------- */
-
-// Define valid marking labels if you need them elsewhere
 type Mark = "correct" | "incorrect" | "manual" | "unknown";
 
 const TRUE_FALSE_OPTIONS = ["True", "False"] as const;
 
-// Helper function to normalize strings
-const normalize = (s?: string) => s?.trim().toLowerCase() ?? "";
+const normalize = (s?: string | null) => s?.trim().toLowerCase() ?? "";
 
-// Use type narrowing based on the `type` field of `QuizQuestion`
-const isAutoMarkable = (q: QuizQuestion) =>
+const isAutoMarkable = (q: Question) =>
   q.type === "mcq" || q.type === "truefalse" || q.type === "fill";
-
-/* --------------------------------- Choice --------------------------------- */
 
 type ChoiceProps = {
   text: string;
@@ -83,8 +74,6 @@ function Choice({
   );
 }
 
-/* --------------------------- Result panel (styled) ------------------------- */
-
 function ResultPanel({
   mark,
   correctAnswer,
@@ -92,8 +81,8 @@ function ResultPanel({
   concepts,
 }: {
   mark: Mark;
-  correctAnswer?: string;
-  explanation?: string;
+  correctAnswer?: string | null;
+  explanation?: string | null;
   concepts?: string[];
 }) {
   const isCorrect = mark === "correct";
@@ -125,7 +114,6 @@ function ResultPanel({
             iconBg
           )}
         >
-          {/* Circle check (green) or x (red) inline SVGs */}
           {isCorrect ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -178,9 +166,8 @@ function ResultPanel({
 
         <div className="flex-1">
           <div className="font-medium mb-2">{title}</div>
-          <p className="text-sm text-gray-700"></p>
           <p className="text-gray-700 text-sm">
-            Answer: {correctAnswer}. {explanation}
+            Answer: {correctAnswer ?? "N/A"}. {explanation ?? ""}
           </p>
 
           {!!concepts?.length && (
@@ -206,17 +193,18 @@ function ResultPanel({
   );
 }
 
-/* ------------------------------- Main component --------------------------- */
-
 export default function QuizTakingMenu({
   questions,
   quiz,
 }: {
-  questions: QuizQuestion[];
+  questions: Question[];
   quiz: Quiz;
 }) {
   const { session, user, supabase, loading } = useAuth();
+
   const addAnswer = useQuizStore((state) => state.addAnswer);
+  const answers = useQuizStore((state) => state.answers);
+  
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState<Record<number, string>>({});
   const [results, setResults] = useState<Record<number, Mark>>({});
@@ -229,26 +217,25 @@ export default function QuizTakingMenu({
       </div>
     );
   }
+
   const currentQuestion = questions[currentIndex];
   const isMarked = results[currentIndex] !== undefined;
-  const normalizedCorrect =
-    "answer" in currentQuestion ? normalize(currentQuestion.answer) : "";
+  const normalizedCorrect = normalize(currentQuestion.answer);
 
   const handleChange = useCallback(
     (val: string) => {
       setResponses((prev) => ({ ...prev, [currentIndex]: val }));
 
-      const answerObj: Answer = {
-        id: uuidv4(),
-        user_id: user?.id, // or get from session
-        quiz_id: quiz.id ?? "",
-        question_id: currentQuestion.id ?? "",
+      const answerObj: AnswerInsert = {
+        user_id: user?.id,
+        quiz_id: quiz.id,
+        question_id: currentQuestion.id,
         user_answer: val,
-        is_correct: false, // updated when marking
+        is_correct: false,
       };
       addAnswer(answerObj);
     },
-    [currentIndex, quiz, currentQuestion, addAnswer]
+    [currentIndex, quiz, currentQuestion, addAnswer, user]
   );
 
   const handleMark = useCallback(() => {
@@ -272,15 +259,14 @@ export default function QuizTakingMenu({
 
     setResults((prev) => ({ ...prev, [currentIndex]: mark }));
 
-    // update store answer correctness
-    addAnswer({
-      id: uuidv4(),
-      user_id: user?.id, // or get from session
-      quiz_id: quiz.id ?? "",
-      question_id: currentQuestion.id ?? "",
+    const answerObj: AnswerInsert = {
+      user_id: user?.id,
+      quiz_id: quiz.id,
+      question_id: currentQuestion.id,
       user_answer: responses[currentIndex],
       is_correct: correct,
-    });
+    };
+    addAnswer(answerObj);
   }, [
     currentIndex,
     currentQuestion,
@@ -288,6 +274,7 @@ export default function QuizTakingMenu({
     normalizedCorrect,
     quiz,
     addAnswer,
+    user,
   ]);
 
   const goTo = useCallback(
@@ -299,7 +286,9 @@ export default function QuizTakingMenu({
   );
 
   const choiceOptions = useMemo(() => {
-    if (currentQuestion.type === "mcq") return currentQuestion.options;
+    // Handle options as Json type
+    const options = currentQuestion.options as string[] | null;
+    if (currentQuestion.type === "mcq") return options ?? [];
     if (currentQuestion.type === "truefalse") return [...TRUE_FALSE_OPTIONS];
     return null;
   }, [currentQuestion]);
@@ -340,7 +329,7 @@ export default function QuizTakingMenu({
         </div>
         <h3>{quiz.title}</h3>
         <p>{quiz.description}</p>
-        <p>{quiz.created_at}</p>
+        <p>{quiz.created_at ? new Date(quiz.created_at).toLocaleDateString() : ""}</p>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -377,13 +366,10 @@ export default function QuizTakingMenu({
           />
         )}
 
-        {/* Styled result panel */}
         {results[currentIndex] && (
           <ResultPanel
             mark={results[currentIndex]!}
-            correctAnswer={
-              "answer" in currentQuestion ? currentQuestion.answer : undefined
-            }
+            correctAnswer={currentQuestion.answer}
             explanation={currentQuestion.explanation}
           />
         )}
@@ -451,19 +437,17 @@ export default function QuizTakingMenu({
           🧠 Check Answer
         </Button>
       </CardFooter>
-      {
-        currentIndex === questions.length - 1 && quiz.id && (
-          <Button
-            variant="default"
-            onClick={async () => {
-              await finishQuiz(quiz.id || "");
-              alert("Quiz submitted successfully!");
-            }}
-          >
-            Submit Quiz
-          </Button>
-        )
-      }
+      {currentIndex === questions.length - 1 && (
+        <Button
+          variant="default"
+          onClick={async () => {
+            await finishQuiz(quiz.id, answers);
+            alert("Quiz submitted successfully!");
+          }}
+        >
+          Submit Quiz
+        </Button>
+      )}
       <Button
         variant="outline"
         onClick={() => exportQuizQuestions(questions, quiz)}
