@@ -22,8 +22,6 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -36,10 +34,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { Quiz } from "@/lib/supabase/client"; // ✅ Import from Supabase client
+import { Quiz } from "@/lib/supabase/client";
 
 export const getColumns = (
-  onStartQuiz: (id: string) => void
+  onStartQuiz: (id: string) => void,
+  onDeleteQuiz: (id: string) => void
 ): ColumnDef<Quiz>[] => [
   {
     id: "select",
@@ -69,7 +68,9 @@ export const getColumns = (
     cell: ({ row }) => {
       const status = row.getValue("status") as string | null;
       return (
-        <div className="capitalize">{status?.replace("_", " ") ?? "Not Started"}</div>
+        <div className="capitalize">
+          {status?.replace("_", " ") ?? "Not Started"}
+        </div>
       );
     },
   },
@@ -154,14 +155,16 @@ export const getColumns = (
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>View Quiz</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStartQuiz(quiz.id)}>
+                View Quiz
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => console.log("Share quiz", quiz.id)}
               >
                 Share
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => console.log("Delete quiz", quiz.id)}
+                onClick={() => onDeleteQuiz(quiz.id)}
                 className="text-red-600"
               >
                 Delete

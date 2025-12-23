@@ -12,13 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "./ui/badge";
 import clsx from "clsx";
-import { Quiz, Question, AnswerInsert } from "@/lib/supabase/client"; // ✅ Use Supabase types
-import { exportQuizQuestions } from "@/lib/quizExport";
-import { exportQuizMarkscheme } from "@/lib/quizExport";
+import { Quiz, Question, AnswerInsert } from "@/lib/supabase/client";
+import { exportQuizQuestions, exportQuizMarkscheme } from "@/lib/quizExport";
 import { useQuizStore } from "@/store/useQuizStore";
 import { finishQuiz } from "@/lib/supabase/finishQuiz";
-import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/components/AuthProvider";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 type Mark = "correct" | "incorrect" | "manual" | "unknown";
 
@@ -78,12 +78,10 @@ function ResultPanel({
   mark,
   correctAnswer,
   explanation,
-  concepts,
 }: {
   mark: Mark;
   correctAnswer?: string | null;
   explanation?: string | null;
-  concepts?: string[];
 }) {
   const isCorrect = mark === "correct";
   const isIncorrect = mark === "incorrect";
@@ -169,24 +167,6 @@ function ResultPanel({
           <p className="text-gray-700 text-sm">
             Answer: {correctAnswer ?? "N/A"}. {explanation ?? ""}
           </p>
-
-          {!!concepts?.length && (
-            <div className="mt-3">
-              <div className="text-xs font-medium text-gray-600 mb-1">
-                Concepts covered:
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {concepts.map((c) => (
-                  <span
-                    key={c}
-                    className="px-2 py-1 bg-[#E5F0EE] text-[#135E50] rounded-full text-xs"
-                  >
-                    {c}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -200,11 +180,9 @@ export default function QuizTakingMenu({
   questions: Question[];
   quiz: Quiz;
 }) {
-  const { session, user, supabase, loading } = useAuth();
-
-  const addAnswer = useQuizStore((state) => state.addAnswer);
-  const answers = useQuizStore((state) => state.answers);
-  
+  const router = useRouter();
+  const { session, user, loading } = useAuth();
+  const { answers, addAnswer, clearAnswers } = useQuizStore();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState<Record<number, string>>({});
   const [results, setResults] = useState<Record<number, Mark>>({});
@@ -227,7 +205,7 @@ export default function QuizTakingMenu({
       setResponses((prev) => ({ ...prev, [currentIndex]: val }));
 
       const answerObj: AnswerInsert = {
-        user_id: user?.id,
+        user_id: user?.id ?? null,
         quiz_id: quiz.id,
         question_id: currentQuestion.id,
         user_answer: val,
@@ -260,10 +238,10 @@ export default function QuizTakingMenu({
     setResults((prev) => ({ ...prev, [currentIndex]: mark }));
 
     const answerObj: AnswerInsert = {
-      user_id: user?.id,
+      user_id: user?.id ?? null,
       quiz_id: quiz.id,
       question_id: currentQuestion.id,
-      user_answer: responses[currentIndex],
+      user_answer: responses[currentIndex] ?? null,
       is_correct: correct,
     };
     addAnswer(answerObj);
@@ -286,7 +264,6 @@ export default function QuizTakingMenu({
   );
 
   const choiceOptions = useMemo(() => {
-    // Handle options as Json type
     const options = currentQuestion.options as string[] | null;
     if (currentQuestion.type === "mcq") return options ?? [];
     if (currentQuestion.type === "truefalse") return [...TRUE_FALSE_OPTIONS];
@@ -437,29 +414,43 @@ export default function QuizTakingMenu({
           🧠 Check Answer
         </Button>
       </CardFooter>
+
       {currentIndex === questions.length - 1 && (
-        <Button
-          variant="default"
-          onClick={async () => {
-            await finishQuiz(quiz.id, answers);
-            alert("Quiz submitted successfully!");
-          }}
-        >
-          Submit Quiz
-        </Button>
+        <div className="p-6 pt-0">
+          <Button
+            variant="default"
+            className="w-full"
+            onClick={async () => {
+              try {
+                await finishQuiz(quiz.id, answers);
+                clearAnswers();
+                toast.success("Quiz submitted successfully!");
+                router.push("/dashboard");
+              } catch (error) {
+                toast.error("Failed to submit quiz");
+                console.error("Submit error:", error);
+              }
+            }}
+          >
+            Submit Quiz
+          </Button>
+        </div>
       )}
-      <Button
-        variant="outline"
-        onClick={() => exportQuizQuestions(questions, quiz)}
-      >
-        Export Quiz
-      </Button>
-      <Button
-        variant="outline"
-        onClick={() => exportQuizMarkscheme(questions, quiz)}
-      >
-        Export Markscheme
-      </Button>
+
+      <div className="p-6 pt-0 flex gap-2">
+        <Button
+          variant="outline"
+          onClick={() => exportQuizQuestions(questions, quiz)}
+        >
+          Export Quiz
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => exportQuizMarkscheme(questions, quiz)}
+        >
+          Export Markscheme
+        </Button>
+      </div>
     </Card>
   );
 }

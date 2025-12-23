@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "./ui/badge";
 import clsx from "clsx";
-import { Quiz, Question } from "@/lib/supabase/client"; // ✅ Use Supabase types
+import { Quiz, Question } from "@/lib/supabase/client";
 
 const TRUE_FALSE_OPTIONS = ["True", "False"] as const;
 
@@ -158,10 +158,11 @@ export default function QuizPreview({
             variant="outline"
             onClick={() => goTo(currentIndex + 1)}
             disabled={currentIndex === questions.length - 1}
-          >Next
+          >
+            Next
           </Button>
         </div>
       </CardFooter>
     </Card>
-    );
+  );
 }
