@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient, Quiz } from "@/lib/supabase/client";
-import { DataTable, getColumns } from "@/components/dataTable";
+import { DataTable, getColumns } from "@/components/DataTable";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
