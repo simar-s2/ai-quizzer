@@ -17,6 +17,7 @@ import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -36,10 +37,15 @@ import {
 
 import { Quiz } from "@/lib/supabase/client";
 
+interface QuizWithScore extends Quiz {
+  best_score?: number | null;
+  attempts_count?: number;
+}
+
 export const getColumns = (
   onStartQuiz: (id: string) => void,
   onDeleteQuiz: (id: string) => void
-): ColumnDef<Quiz>[] => [
+): ColumnDef<QuizWithScore>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -61,18 +67,6 @@ export const getColumns = (
     ),
     enableSorting: false,
     enableHiding: false,
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string | null;
-      return (
-        <div className="capitalize">
-          {status?.replace("_", " ") ?? "Not Started"}
-        </div>
-      );
-    },
   },
   {
     accessorKey: "title",
@@ -97,20 +91,46 @@ export const getColumns = (
     ),
   },
   {
-    accessorKey: "tags",
-    header: "Tags",
+    accessorKey: "status",
+    header: "Status",
     cell: ({ row }) => {
-      const tags = row.getValue("tags") as string[] | null;
+      const status = row.getValue("status") as string | null;
       return (
-        <div className="flex flex-wrap gap-1">
-          {tags?.map((tag, i) => (
-            <span
-              key={i}
-              className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-            >
-              {tag}
-            </span>
-          )) ?? "-"}
+        <Badge variant="secondary" className="capitalize">
+          {status?.replace("_", " ") ?? "Not Started"}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "attempts_count",
+    header: "Attempts",
+    cell: ({ row }) => {
+      const count = row.original.attempts_count || 0;
+      return <div className="text-center">{count}</div>;
+    },
+  },
+  {
+    accessorKey: "best_score",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Best Score
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => {
+      const score = row.original.best_score;
+      if (score === null || score === undefined) {
+        return <div className="text-center text-muted-foreground">-</div>;
+      }
+      
+      const variant = score >= 75 ? "default" : score >= 50 ? "secondary" : "destructive";
+      return (
+        <div className="flex justify-center">
+          <Badge variant={variant}>{score.toFixed(1)}%</Badge>
         </div>
       );
     },
@@ -122,7 +142,7 @@ export const getColumns = (
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Created At
+        Created
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
@@ -132,20 +152,13 @@ export const getColumns = (
     },
   },
   {
-    accessorKey: "visibility",
-    header: "Visibility",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("visibility") || "-"}</div>
-    ),
-  },
-  {
     id: "actions",
     cell: ({ row }) => {
       const quiz = row.original;
       return (
         <div className="flex items-center gap-2">
           <Button onClick={() => onStartQuiz(quiz.id)} size="sm">
-            Start Quiz
+            {quiz.status === "completed" ? "Retake" : "Start"}
           </Button>
 
           <DropdownMenu>

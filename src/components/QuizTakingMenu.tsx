@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   Card,
   CardHeader,
@@ -12,10 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "./ui/badge";
 import clsx from "clsx";
-import { Quiz, Question, AnswerInsert } from "@/lib/supabase/client";
+import { Quiz, Question } from "@/lib/supabase/client";
 import { exportQuizQuestions, exportQuizMarkscheme } from "@/lib/quizExport";
-import { useQuizStore } from "@/store/useQuizStore";
-import { finishQuiz } from "@/lib/supabase/finishQuiz";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -182,10 +180,11 @@ export default function QuizTakingMenu({
 }) {
   const router = useRouter();
   const { session, user, loading } = useAuth();
-  const { answers, addAnswer, clearAnswers } = useQuizStore();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState<Record<number, string>>({});
   const [results, setResults] = useState<Record<number, Mark>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [startTime] = useState(Date.now());
 
   if (loading) return <p>Loading...</p>;
   if (!session || !user) {
@@ -203,29 +202,19 @@ export default function QuizTakingMenu({
   const handleChange = useCallback(
     (val: string) => {
       setResponses((prev) => ({ ...prev, [currentIndex]: val }));
-
-      const answerObj: AnswerInsert = {
-        user_id: user?.id ?? null,
-        quiz_id: quiz.id,
-        question_id: currentQuestion.id,
-        user_answer: val,
-        is_correct: false,
-      };
-      addAnswer(answerObj);
     },
-    [currentIndex, quiz, currentQuestion, addAnswer, user]
+    [currentIndex]
   );
 
   const handleMark = useCallback(() => {
     const userAnswer = normalize(responses[currentIndex]);
     let mark: Mark = "unknown";
-    let correct = false;
 
     if (isAutoMarkable(currentQuestion)) {
       if (!userAnswer) {
         mark = "unknown";
       } else {
-        correct = userAnswer === normalizedCorrect;
+        const correct = userAnswer === normalizedCorrect;
         mark = correct ? "correct" : "incorrect";
       }
     } else if (
@@ -236,24 +225,59 @@ export default function QuizTakingMenu({
     }
 
     setResults((prev) => ({ ...prev, [currentIndex]: mark }));
+  }, [currentIndex, currentQuestion, responses, normalizedCorrect]);
 
-    const answerObj: AnswerInsert = {
-      user_id: user?.id ?? null,
-      quiz_id: quiz.id,
-      question_id: currentQuestion.id,
-      user_answer: responses[currentIndex] ?? null,
-      is_correct: correct,
-    };
-    addAnswer(answerObj);
-  }, [
-    currentIndex,
-    currentQuestion,
-    responses,
-    normalizedCorrect,
-    quiz,
-    addAnswer,
-    user,
-  ]);
+  const handleSubmitQuiz = async () => {
+    if (!confirm("Are you sure you want to submit your quiz? This action cannot be undone.")) {
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Calculate time taken in seconds
+      const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+
+      // Prepare answers for submission
+      const answers = questions.map((q, index) => ({
+        question_id: q.id,
+        user_answer: responses[index] || "",
+      }));
+
+      const response = await fetch("/api/mark-quiz", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          quiz_id: quiz.id,
+          answers,
+          time_taken: timeTaken,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit quiz");
+      }
+
+      toast.success(`Quiz submitted! You scored ${data.score.toFixed(1)}%`, {
+        description: data.overall_feedback,
+        duration: 5000,
+      });
+
+      // Redirect to results page or dashboard
+      router.push(`/quiz/${quiz.id}/results/${data.attempt_id}`);
+    } catch (error: any) {
+      console.error("Submit error:", error);
+      toast.error("Failed to submit quiz", {
+        description: error.message || "An unexpected error occurred",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const goTo = useCallback(
     (i: number) => {
@@ -304,9 +328,8 @@ export default function QuizTakingMenu({
             </Badge>
           ))}
         </div>
-        <h3>{quiz.title}</h3>
-        <p>{quiz.description}</p>
-        <p>{quiz.created_at ? new Date(quiz.created_at).toLocaleDateString() : ""}</p>
+        <h3 className="text-2xl font-bold">{quiz.title}</h3>
+        <p className="text-muted-foreground">{quiz.description}</p>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -317,7 +340,7 @@ export default function QuizTakingMenu({
           <Badge variant="secondary">{currentQuestion.type}</Badge>
         </div>
 
-        <p>{currentQuestion.question_text}</p>
+        <p className="text-lg font-medium">{currentQuestion.question_text}</p>
 
         {(currentQuestion.type === "mcq" ||
           currentQuestion.type === "truefalse") &&
@@ -366,6 +389,7 @@ export default function QuizTakingMenu({
             const isActive = currentIndex === i;
             const isCorrect = isCorrectAt(i);
             const isIncorrect = isIncorrectAt(i);
+            const hasAnswer = responses[i] !== undefined && responses[i] !== "";
 
             return (
               <Button
@@ -378,6 +402,7 @@ export default function QuizTakingMenu({
                     isCorrect,
                   "bg-red-100 border-red-400 text-red-800 hover:bg-red-100":
                     isIncorrect,
+                  "bg-blue-50 border-blue-300": hasAnswer && !isCorrect && !isIncorrect,
                   "ring-2 ring-offset-2 ring-gray-300":
                     isActive && !isCorrect && !isIncorrect,
                   "ring-2 ring-offset-2 ring-green-300": isActive && isCorrect,
@@ -393,7 +418,9 @@ export default function QuizTakingMenu({
                     ? "Manual review"
                     : markAt(i) === "unknown"
                     ? "Cannot mark"
-                    : "Unmarked"
+                    : hasAnswer
+                    ? "Answered"
+                    : "Not answered"
                 }
               >
                 {i + 1}
@@ -415,41 +442,33 @@ export default function QuizTakingMenu({
         </Button>
       </CardFooter>
 
-      {currentIndex === questions.length - 1 && (
-        <div className="p-6 pt-0">
+      <div className="p-6 pt-0 space-y-3">
+        <Button
+          variant="default"
+          className="w-full"
+          size="lg"
+          onClick={handleSubmitQuiz}
+          disabled={submitting}
+        >
+          {submitting ? "Submitting..." : "Submit Quiz for Grading"}
+        </Button>
+
+        <div className="flex gap-2">
           <Button
-            variant="default"
-            className="w-full"
-            onClick={async () => {
-              try {
-                await finishQuiz(quiz.id, answers);
-                clearAnswers();
-                toast.success("Quiz submitted successfully!");
-                router.push("/dashboard");
-              } catch (error) {
-                toast.error("Failed to submit quiz");
-                console.error("Submit error:", error);
-              }
-            }}
+            variant="outline"
+            className="flex-1"
+            onClick={() => exportQuizQuestions(questions, quiz)}
           >
-            Submit Quiz
+            Export Quiz
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => exportQuizMarkscheme(questions, quiz)}
+          >
+            Export Markscheme
           </Button>
         </div>
-      )}
-
-      <div className="p-6 pt-0 flex gap-2">
-        <Button
-          variant="outline"
-          onClick={() => exportQuizQuestions(questions, quiz)}
-        >
-          Export Quiz
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => exportQuizMarkscheme(questions, quiz)}
-        >
-          Export Markscheme
-        </Button>
       </div>
     </Card>
   );

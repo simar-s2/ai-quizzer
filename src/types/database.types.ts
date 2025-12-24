@@ -62,6 +62,107 @@ export type Database = {
           },
         ]
       }
+      attempt_answers: {
+        Row: {
+          ai_feedback: string | null
+          attempt_id: string | null
+          created_at: string | null
+          id: string
+          is_correct: boolean | null
+          marks_awarded: number | null
+          marks_possible: number | null
+          question_id: string | null
+          user_answer: string | null
+        }
+        Insert: {
+          ai_feedback?: string | null
+          attempt_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          marks_awarded?: number | null
+          marks_possible?: number | null
+          question_id?: string | null
+          user_answer?: string | null
+        }
+        Update: {
+          ai_feedback?: string | null
+          attempt_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          marks_awarded?: number | null
+          marks_possible?: number | null
+          question_id?: string | null
+          user_answer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempt_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempt_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attempts: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          feedback: Json | null
+          id: string
+          marks_obtained: number
+          quiz_id: string | null
+          score: number
+          time_taken: number | null
+          total_marks: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          feedback?: Json | null
+          id?: string
+          marks_obtained: number
+          quiz_id?: string | null
+          score: number
+          time_taken?: number | null
+          total_marks: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          feedback?: Json | null
+          id?: string
+          marks_obtained?: number
+          quiz_id?: string | null
+          score?: number
+          time_taken?: number | null
+          total_marks?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       questions: {
         Row: {
           answer: string | null

@@ -35,3 +35,9 @@ export type QuestionType = Enums<'question_type'>
 export type DifficultyLevel = Enums<'difficulty_level'>
 export type QuizStatus = Enums<'quiz_status'>
 export type VisibilityStatus = Enums<'visibility_status'>
+
+export type Attempt = Tables<'attempts'>
+export type AttemptAnswer = Tables<'attempt_answers'>
+
+export type AttemptInsert = InsertDto<'attempts'>
+export type AttemptAnswerInsert = InsertDto<'attempt_answers'>
