@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import QuizPreview from "@/components/QuizPreview";
-import Spinner from "@/components/Spinner";
+import Spinner from "@/components/spinner";
 import QuizSettings from "@/components/QuizSettings";
 import { Quiz, Question } from "@/lib/supabase/client";
 import { saveQuiz } from "@/lib/supabase/saveQuiz";
