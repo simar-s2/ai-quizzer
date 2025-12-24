@@ -1,11 +1,11 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient, Quiz } from "@/lib/supabase/client";
 import { DataTable, getColumns } from "@/components/dataTable";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Spinner from "@/components/spinner";
+import Spinner from "@/components/Spinner";
 import { deleteQuiz } from "@/lib/supabase/deleteQuiz";
 import {
   Card,
@@ -22,9 +22,9 @@ interface QuizWithAttempts extends Quiz {
   attempts?: Array<{
     id: string;
     score: number;
-    completed_at: string;
+    completed_at: string | null;
   }>;
-  best_score?: number;
+  best_score?: number | null;
   attempts_count?: number;
 }
 
@@ -38,30 +38,33 @@ export default function QuizzesPage() {
   const { user, loading: authLoading } = useAuth();
   const hasFetched = useRef(false);
 
-  const fetchQuizzes = async () => {
+  const fetchQuizzes = useCallback(async () => {
     setLoading(true);
-    
+
     // Fetch quizzes with their attempts
     const { data, error } = await supabase
       .from("quizzes")
-      .select(`
+      .select(
+        `
         *,
         attempts (
           id,
           score,
           completed_at
         )
-      `)
+      `
+      )
       .order("created_at", { ascending: false });
 
     if (!error && data) {
       // Process data to add best_score and attempts_count
-      const processedData = data.map((quiz: any) => {
+      const processedData = data.map((quiz) => {
         const attempts = quiz.attempts || [];
-        const bestScore = attempts.length > 0
-          ? Math.max(...attempts.map((a: any) => a.score))
-          : null;
-        
+        const bestScore =
+          attempts.length > 0
+            ? Math.max(...attempts.map((a) => a.score))
+            : null;
+
         return {
           ...quiz,
           best_score: bestScore,
@@ -77,11 +80,11 @@ export default function QuizzesPage() {
       });
     }
     setLoading(false);
-  };
+  }, [supabase]);
 
   useEffect(() => {
     if (hasFetched.current) return;
-    
+
     if (!authLoading) {
       if (quizCache.length === 0 && user) {
         hasFetched.current = true;
@@ -94,17 +97,21 @@ export default function QuizzesPage() {
         setQuizzes([]);
       }
     }
-  }, [authLoading, user]);
+  }, [authLoading, user, fetchQuizzes]);
 
   const handleDeleteQuiz = async (quizId: string) => {
-    if (!confirm("Are you sure you want to delete this quiz? This action cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this quiz? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
     setLoading(true);
     try {
       const result = await deleteQuiz(quizId);
-      
+
       if (result.success) {
         toast.success("Quiz deleted successfully");
         const updatedQuizzes = quizzes.filter((q) => q.id !== quizId);
@@ -138,11 +145,18 @@ export default function QuizzesPage() {
 
   // Statistics
   const totalQuizzes = quizzes.length;
-  const completedQuizzes = quizzes.filter((q) => q.status === "completed").length;
-  const totalAttempts = quizzes.reduce((sum, q) => sum + (q.attempts_count || 0), 0);
-  const averageScore = quizzes
-    .filter((q) => q.best_score !== null)
-    .reduce((sum, q) => sum + (q.best_score || 0), 0) / (quizzes.filter((q) => q.best_score !== null).length || 1);
+  const completedQuizzes = quizzes.filter(
+    (q) => q.status === "completed"
+  ).length;
+  const totalAttempts = quizzes.reduce(
+    (sum, q) => sum + (q.attempts_count || 0),
+    0
+  );
+  const averageScore =
+    quizzes
+      .filter((q) => q.best_score !== null)
+      .reduce((sum, q) => sum + (q.best_score || 0), 0) /
+    (quizzes.filter((q) => q.best_score !== null).length || 1);
 
   return (
     <div className="p-4 space-y-6">
@@ -231,7 +245,7 @@ export default function QuizzesPage() {
               .slice(0, 6)
               .map((quiz) => {
                 const latestAttempt = quiz.attempts?.[0];
-                if (!latestAttempt) return null;
+                if (!latestAttempt || !latestAttempt.completed_at) return null;
 
                 return (
                   <Link
@@ -240,14 +254,20 @@ export default function QuizzesPage() {
                   >
                     <Card className="hover:shadow-md transition-shadow cursor-pointer">
                       <CardHeader>
-                        <CardTitle className="text-lg truncate">{quiz.title}</CardTitle>
+                        <CardTitle className="text-lg truncate">
+                          {quiz.title}
+                        </CardTitle>
                         <CardDescription>
-                          {new Date(latestAttempt.completed_at).toLocaleDateString()}
+                          {new Date(
+                            latestAttempt.completed_at
+                          ).toLocaleDateString()}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Score:</span>
+                          <span className="text-sm text-muted-foreground">
+                            Score:
+                          </span>
                           <Badge
                             variant={
                               latestAttempt.score >= 75

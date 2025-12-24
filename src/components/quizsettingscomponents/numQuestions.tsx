@@ -2,24 +2,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { QuizSettingsType } from "@/types/quiz-settings";
 
 const NumQuestions = ({
   quizSettings,
   setQuizSettings,
 }: {
-  quizSettings: any;
-  setQuizSettings: React.Dispatch<React.SetStateAction<any>>;
+  quizSettings: QuizSettingsType;
+  setQuizSettings: React.Dispatch<React.SetStateAction<QuizSettingsType>>;
 }) => {
   const handleNumQuestionsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const numQuestions = Math.max(1, parseInt(value) || 1);
-    const totalDistribution: number = Object.values(quizSettings.type?.distribution).reduce((a: number, b: unknown) => {
-      if (typeof b === 'number') {
-        return a + b;
-      } else {
-        throw new Error('Expected a number');
-      }
-    }, 0) as number;
+    const totalDistribution: number = Object.values(quizSettings.type.distribution).reduce((a: number, b: number) => a + b, 0);
         if (numQuestions < totalDistribution) {
           toast("Question count too low for selected distribution.", {
             description: `You’ve allocated ${totalDistribution} questions across types. Please increase the total to match or exceed the distribution.`,
@@ -29,11 +24,6 @@ const NumQuestions = ({
     }
 
     setQuizSettings({ ...quizSettings, numQuestions });
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    setQuizSettings({ ...quizSettings, numQuestions: isNaN(value) ? 0 : value });
   };
 
   return (

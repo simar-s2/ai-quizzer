@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import QuizPreview from "@/components/QuizPreview";
-import Spinner from "@/components/spinner";
+import Spinner from "@/components/Spinner";
 import QuizSettings from "@/components/QuizSettings";
 import { Quiz, Question } from "@/lib/supabase/client";
 import { saveQuiz } from "@/lib/supabase/saveQuiz";
@@ -23,13 +23,14 @@ import { exportQuizMarkscheme, exportQuizQuestions } from "@/lib/quizExport";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { QuizSettingsType } from "@/types/quiz-settings";
 
 export default function Home() {
   // State
   const [questions, setQuestions] = useState<Question[]>([]);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(false);
-  const [quizSettings, setQuizSettings] = useState({
+  const [quizSettings, setQuizSettings] = useState<QuizSettingsType>({
     difficulty: "medium",
     numQuestions: 5,
     topic: "",
@@ -67,7 +68,7 @@ export default function Home() {
         body: JSON.stringify({ text: rawText, settings: quizSettings }),
       });
       const data = await res.json();
-      
+
       if (data.error) {
         toast.error(data.error);
         return;
@@ -122,7 +123,9 @@ export default function Home() {
       {/* Hero */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         <div className="max-w-2xl">
-          <h1 className="text-4xl font-bold">Generate quizzes from your documents or notes</h1>
+          <h1 className="text-4xl font-bold">
+            Generate quizzes from your documents or notes
+          </h1>
           <p className="mt-2 text-slate-600">
             Upload PDFs or paste text. Tune settings. Preview instantly.
           </p>
@@ -210,7 +213,8 @@ export default function Home() {
                           {loading ? "Generating..." : "Generate quiz"}
                         </Button>
                         <span className="text-xs text-muted-foreground">
-                          PDFs are parsed and summarized before question creation.
+                          PDFs are parsed and summarized before question
+                          creation.
                         </span>
                       </div>
                     </CardFooter>

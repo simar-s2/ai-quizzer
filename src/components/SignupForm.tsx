@@ -40,9 +40,7 @@ export default function SignUpForm({
     if (error) {
       setError(error.message);
     } else {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      await supabase.auth.getSession();
       router.push("/");
     }
 

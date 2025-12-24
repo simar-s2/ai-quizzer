@@ -3,13 +3,14 @@ import NumQuestions from "./quizsettingscomponents/NumQuestions";
 import QuestionTypes from "./quizsettingscomponents/QuestionTypes";
 import Topic from "./quizsettingscomponents/Topic";
 import { Separator } from "@/components/ui/separator";
+import { QuizSettingsType } from "@/types/quiz-settings";
 
 const QuizSettings = ({
   quizSettings,
   setQuizSettings,
 }: {
-  quizSettings: any;
-  setQuizSettings: React.Dispatch<React.SetStateAction<any>>;
+  quizSettings: QuizSettingsType;
+  setQuizSettings: React.Dispatch<React.SetStateAction<QuizSettingsType>>;
 }) => {
   return (
     <div className="space-y-6">

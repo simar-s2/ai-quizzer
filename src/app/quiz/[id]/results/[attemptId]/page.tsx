@@ -150,7 +150,7 @@ export default async function QuizResultsPage({
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold">Detailed Results</h2>
         {attemptAnswers?.map((answer, index) => {
-          const question = answer.questions as any;
+          const question = answer.questions as { id: string; question_text: string; type: string; answer?: string; explanation?: string; marks?: number } | null;
           if (!question) return null;
 
           return (

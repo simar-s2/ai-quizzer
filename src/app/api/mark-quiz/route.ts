@@ -109,17 +109,21 @@ For each question, provide:
 - feedback: detailed constructive feedback explaining the score`;
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const jsonSchema = zodToJsonSchema(markingResponseSchema as any);
+      
       const response = await client.models.generateContent({
         model: "gemini-2.5-flash",
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
-          responseJsonSchema: zodToJsonSchema(markingResponseSchema),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          responseJsonSchema: jsonSchema as any,
           temperature: 0.3,
         },
       });
 
-      const aiResult = markingResponseSchema.parse(JSON.parse(response.text));
+      const aiResult = markingResponseSchema.parse(JSON.parse(response.text || "{}"));
 
       // Process AI results
       aiResult.marked_answers.forEach((marked) => {
@@ -143,7 +147,7 @@ For each question, provide:
           feedback: marked.feedback || "Answer received.",
         });
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("AI Marking Error:", error);
       
       // Enhanced fallback: use simple heuristics for marking
@@ -282,7 +286,7 @@ export async function POST(req: Request) {
     }
 
     // Prepare answers for marking
-    const answersToMark: AnswerToMark[] = answers.map((ans: any) => {
+    const answersToMark: AnswerToMark[] = answers.map((ans: { question_id: string; user_answer?: string }) => {
       const question = questions.find((q) => q.id === ans.question_id);
       if (!question) {
         throw new Error(`Question ${ans.question_id} not found`);
@@ -329,7 +333,7 @@ export async function POST(req: Request) {
     const attemptAnswers = markingResult.question_results.map((result) => ({
       attempt_id: attempt.id,
       question_id: result.question_id,
-      user_answer: answers.find((a: any) => a.question_id === result.question_id)
+      user_answer: answers.find((a: { question_id: string; user_answer?: string }) => a.question_id === result.question_id)
         ?.user_answer || null,
       is_correct: result.is_correct,
       marks_awarded: result.marks_awarded,
@@ -362,10 +366,11 @@ export async function POST(req: Request) {
       overall_feedback: markingResult.overall_feedback,
       question_results: markingResult.question_results,
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error marking quiz:", err);
+    const errorMessage = err instanceof Error ? err.message : "Failed to mark quiz";
     return NextResponse.json(
-      { error: err.message || "Failed to mark quiz" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

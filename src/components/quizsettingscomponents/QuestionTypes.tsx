@@ -8,18 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-interface QuizSettings {
-  numQuestions: number;
-  type?: {
-    selectedTypes?: string[];
-    distribution?: Record<string, number>;
-  };
-}
+import { QuizSettingsType } from "@/types/quiz-settings";
 
 interface TypeProps {
-  quizSettings: QuizSettings;
-  setQuizSettings: React.Dispatch<React.SetStateAction<QuizSettings>>;
+  quizSettings: QuizSettingsType;
+  setQuizSettings: React.Dispatch<React.SetStateAction<QuizSettingsType>>;
 }
 
 const QUESTION_TYPES = [
@@ -30,7 +23,7 @@ const QUESTION_TYPES = [
   "Essay",
 ] as const;
 
-const typeKeyMap: Record<(typeof QUESTION_TYPES)[number], string> = {
+const typeKeyMap: Record<(typeof QUESTION_TYPES)[number], keyof QuizSettingsType["type"]["distribution"]> = {
   "True/False": "truefalse",
   "Fill in the Blank": "fill",
   "Multiple Choice": "mcq",
@@ -41,21 +34,23 @@ const typeKeyMap: Record<(typeof QUESTION_TYPES)[number], string> = {
 export default function Type({ quizSettings, setQuizSettings }: TypeProps) {
   const [customDistribution, setCustomDistribution] = useState(false);
 
-  const selectedTypes = quizSettings.type?.selectedTypes ?? [];
-  const distribution = quizSettings.type?.distribution ?? {};
+  const selectedTypes = quizSettings.type.selectedTypes;
+  const distribution = quizSettings.type.distribution;
   const totalQuestions = quizSettings.numQuestions;
 
+  // Create a stable stringified version for memoization
+  const distributionKey = JSON.stringify(distribution);
   const distributionTotal = useMemo(
     () => Object.values(distribution).reduce((a, b) => a + (b || 0), 0),
-    [distribution]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [distributionKey]
   );
 
-  const updateSettings = (changes: Partial<QuizSettings["type"]>) => {
+  const updateSettings = (changes: Partial<QuizSettingsType["type"]>) => {
     setQuizSettings((prev) => ({
       ...prev,
       type: {
-        selectedTypes: prev.type?.selectedTypes ?? [],
-        distribution: prev.type?.distribution ?? {},
+        ...prev.type,
         ...changes,
       },
     }));
@@ -68,7 +63,7 @@ export default function Type({ quizSettings, setQuizSettings }: TypeProps) {
     updateSettings({ selectedTypes: next });
   };
 
-  const changeDist = (key: string, count: number) => {
+  const changeDist = (key: keyof QuizSettingsType["type"]["distribution"], count: number) => {
     const prev = distribution[key] || 0;
     const nextTotal = distributionTotal - prev + count;
 
@@ -87,7 +82,7 @@ export default function Type({ quizSettings, setQuizSettings }: TypeProps) {
     const next = !customDistribution;
     setCustomDistribution(next);
     // clear distribution whenever toggling
-    updateSettings({ distribution: {} });
+    updateSettings({ distribution: { mcq: 0, fill: 0, truefalse: 0, shortanswer: 0, essay: 0 } });
   };
 
   return (

@@ -6,7 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useState } from "react";
 import LoginForm from "@/components/LoginForm";
 import SignupForm from "@/components/SignupForm";
-import Spinner from "@/components/spinner";
+import Spinner from "@/components/Spinner";
 
 export default function AuthPage() {
   const { user, loading } = useAuth(); // assuming loading is returned

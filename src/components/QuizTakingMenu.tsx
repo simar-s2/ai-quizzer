@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Card,
   CardHeader,
@@ -186,15 +186,6 @@ export default function QuizTakingMenu({
   const [submitting, setSubmitting] = useState(false);
   const [startTime] = useState(Date.now());
 
-  if (loading) return <p>Loading...</p>;
-  if (!session || !user) {
-    return (
-      <div className="p-4">
-        <p className="text-red-500">You must be logged in to take this quiz.</p>
-      </div>
-    );
-  }
-
   const currentQuestion = questions[currentIndex];
   const isMarked = results[currentIndex] !== undefined;
   const normalizedCorrect = normalize(currentQuestion.answer);
@@ -269,10 +260,11 @@ export default function QuizTakingMenu({
 
       // Redirect to results page or dashboard
       router.push(`/quiz/${quiz.id}/results/${data.attempt_id}`);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Submit error:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       toast.error("Failed to submit quiz", {
-        description: error.message || "An unexpected error occurred",
+        description: errorMessage,
       });
     } finally {
       setSubmitting(false);
@@ -294,6 +286,19 @@ export default function QuizTakingMenu({
     return null;
   }, [currentQuestion]);
 
+  const markAt = (i: number): Mark | undefined => results[i];
+  const isCorrectAt = (i: number) => results[i] === "correct";
+  const isIncorrectAt = (i: number) => results[i] === "incorrect";
+
+  if (loading) return <p>Loading...</p>;
+  if (!session || !user) {
+    return (
+      <div className="p-4">
+        <p className="text-red-500">You must be logged in to take this quiz.</p>
+      </div>
+    );
+  }
+
   const renderChoices = choiceOptions && (
     <div className="space-y-3" role="radiogroup" aria-label="Choices">
       {choiceOptions.map((opt) => {
@@ -313,10 +318,6 @@ export default function QuizTakingMenu({
       })}
     </div>
   );
-
-  const markAt = (i: number): Mark | undefined => results[i];
-  const isCorrectAt = (i: number) => results[i] === "correct";
-  const isIncorrectAt = (i: number) => results[i] === "incorrect";
 
   return (
     <Card>

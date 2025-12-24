@@ -123,7 +123,7 @@ async function generateQuiz({
     Output JSON only.
   `.trim();
 
-  const parts: any[] = [{ text: basePrompt }];
+  const parts: Array<{ text: string } | ReturnType<typeof createPartFromUri>> = [{ text: basePrompt }];
 
   if (files) {
     for (const file of files) {
@@ -307,10 +307,11 @@ export async function POST(req: Request) {
       message: "Quiz created successfully" 
     });
     
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error generating quiz:", err);
+    const errorMessage = err instanceof Error ? err.message : "Failed to generate quiz";
     return NextResponse.json(
-      { error: err.message || "Failed to generate quiz" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

@@ -5,17 +5,17 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { QuizSettingsType } from "@/types/quiz-settings";
 
 const Difficulty = ({
     quizSettings,
     setQuizSettings,
   }: {
-    quizSettings: any;
-    setQuizSettings: React.Dispatch<React.SetStateAction<any>>;
+    quizSettings: QuizSettingsType;
+    setQuizSettings: React.Dispatch<React.SetStateAction<QuizSettingsType>>;
   }) => {
     const handleChange = (value: string) => {
       setQuizSettings({ ...quizSettings, difficulty: value });
