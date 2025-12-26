@@ -1,5 +1,5 @@
 import QuizTakingMenu from "@/components/QuizTakingMenu";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { fetchQuizWithQuestions } from "@/lib/supabase/fetchQuiz";
 
 export default async function QuizPage({ 
@@ -11,7 +11,8 @@ export default async function QuizPage({
   const { quiz, questions } = await fetchQuizWithQuestions(id);
 
   if (!quiz || !questions) {
-    return notFound();
+    // Could be auth issue or not found
+    redirect("/");
   }
 
   return (

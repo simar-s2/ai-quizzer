@@ -83,21 +83,19 @@ export default function QuizzesPage() {
   }, [supabase]);
 
   useEffect(() => {
-    if (hasFetched.current) return;
-
-    if (!authLoading) {
-      if (quizCache.length === 0 && user) {
-        hasFetched.current = true;
-        fetchQuizzes();
-      } else if (!user) {
-        toast.error("Log in to see your quizzes", {
-          description: "Please log in to view your quizzes.",
-          duration: 3000,
-        });
-        setQuizzes([]);
-      }
-    }
-  }, [authLoading, user, fetchQuizzes]);
+  if (hasFetched.current) return;
+  
+  if (!authLoading) {
+  if (!user) {
+  router.push("/");
+  return;
+  }
+  if (quizCache.length === 0) {
+  hasFetched.current = true;
+  fetchQuizzes();
+  }
+  }
+  }, [authLoading, user, fetchQuizzes, router]);
 
   const handleDeleteQuiz = async (quizId: string) => {
     if (

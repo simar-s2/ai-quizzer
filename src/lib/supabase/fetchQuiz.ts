@@ -7,6 +7,12 @@ export async function fetchQuizWithQuestions(quizId: string): Promise<{
 }> {
   const supabase = await createServerSupabaseClient();
 
+  // Check authentication
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { quiz: null, questions: null };
+  }
+
   // Fetch quiz
   const { data: quiz, error: quizError } = await supabase
     .from("quizzes")

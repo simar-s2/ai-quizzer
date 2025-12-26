@@ -126,8 +126,9 @@ export const getColumns = (
       if (score === null || score === undefined) {
         return <div className="text-center text-muted-foreground">-</div>;
       }
-      
-      const variant = score >= 75 ? "default" : score >= 50 ? "secondary" : "destructive";
+
+      const variant =
+        score >= 75 ? "default" : score >= 50 ? "secondary" : "destructive";
       return (
         <div className="flex justify-center">
           <Badge variant={variant}>{score.toFixed(1)}%</Badge>

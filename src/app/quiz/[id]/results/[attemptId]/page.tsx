@@ -26,7 +26,7 @@ export default async function QuizResultsPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth");
+    redirect("/");
   }
 
   // Fetch attempt
