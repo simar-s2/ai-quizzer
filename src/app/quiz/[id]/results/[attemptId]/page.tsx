@@ -1,32 +1,28 @@
-import { notFound, redirect } from "next/navigation";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { notFound, redirect } from "next/navigation"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { CheckCircle2, XCircle, Lightbulb, Trophy, Target } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import clsx from "clsx"
 
 export default async function QuizResultsPage({
   params,
 }: {
-  params: Promise<{ id: string; attemptId: string }>;
+  params: Promise<{ id: string; attemptId: string }>
 }) {
-  const { id: quizId, attemptId } = await params;
-  const supabase = await createServerSupabaseClient();
+  const { id: quizId, attemptId } = await params
+  const supabase = await createServerSupabaseClient()
 
   // Get current user
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect("/");
+    redirect("/")
   }
 
   // Fetch attempt
@@ -35,21 +31,17 @@ export default async function QuizResultsPage({
     .select("*")
     .eq("id", attemptId)
     .eq("user_id", user.id)
-    .single();
+    .single()
 
   if (attemptError || !attempt) {
-    return notFound();
+    return notFound()
   }
 
   // Fetch quiz
-  const { data: quiz, error: quizError } = await supabase
-    .from("quizzes")
-    .select("*")
-    .eq("id", quizId)
-    .single();
+  const { data: quiz, error: quizError } = await supabase.from("quizzes").select("*").eq("id", quizId).single()
 
   if (quizError || !quiz) {
-    return notFound();
+    return notFound()
   }
 
   // Fetch attempt answers with question details
@@ -67,168 +59,228 @@ export default async function QuizResultsPage({
       )
     `)
     .eq("attempt_id", attemptId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
 
   if (answersError) {
-    console.error("Error fetching answers:", answersError);
+    console.error("Error fetching answers:", answersError)
   }
 
-  const feedback = attempt.feedback as { overall?: string } | null;
-  const overallFeedback = feedback?.overall || "Quiz completed!";
+  const feedback = attempt.feedback as { overall?: string } | null
+  const overallFeedback = feedback?.overall || "Great effort! Keep practicing to improve your score."
 
-  // Calculate statistics
-  const totalQuestions = attemptAnswers?.length || 0;
-  const correctAnswers = attemptAnswers?.filter((a) => a.is_correct).length || 0;
-  const incorrectAnswers = totalQuestions - correctAnswers;
+  const totalQuestions = attemptAnswers?.length || 0
+  const correctAnswers = attemptAnswers?.filter((a) => a.is_correct).length || 0
+  const incorrectAnswers = totalQuestions - correctAnswers
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-600";
-    if (score >= 75) return "text-blue-600";
-    if (score >= 60) return "text-yellow-600";
-    return "text-red-600";
-  };
+    if (score >= 90) return "text-green-600 dark:text-green-400"
+    if (score >= 75) return "text-blue-600 dark:text-blue-400"
+    if (score >= 60) return "text-amber-600 dark:text-amber-400"
+    return "text-red-600 dark:text-red-400"
+  }
 
   const getScoreBg = (score: number) => {
-    if (score >= 90) return "bg-green-50 border-green-200";
-    if (score >= 75) return "bg-blue-50 border-blue-200";
-    if (score >= 60) return "bg-yellow-50 border-yellow-200";
-    return "bg-red-50 border-red-200";
-  };
+    if (score >= 90) return "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
+    if (score >= 75) return "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
+    if (score >= 60) return "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800"
+    return "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
+  }
+
+  const getEncouragingMessage = (score: number) => {
+    if (score >= 90) return "Outstanding performance!"
+    if (score >= 75) return "Great job!"
+    if (score >= 60) return "Good effort!"
+    return "Keep practicing!"
+  }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <Link href="/dashboard">
-          <Button variant="ghost" size="sm">
-            ← Back to Dashboard
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold">Quiz Results</h1>
-        <p className="text-muted-foreground">{quiz.title}</p>
-      </div>
-
-      {/* Score Card */}
-      <Card className={`${getScoreBg(attempt.score)} border-2`}>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Your Score</span>
-            <span className={`text-4xl font-bold ${getScoreColor(attempt.score)}`}>
-              {attempt.score.toFixed(1)}%
-            </span>
-          </CardTitle>
-          <CardDescription>
-            {attempt.marks_obtained.toFixed(1)} out of {attempt.total_marks} marks
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-lg">{overallFeedback}</p>
-          <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold">{totalQuestions}</div>
-              <div className="text-sm text-muted-foreground">Total Questions</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-600">{correctAnswers}</div>
-              <div className="text-sm text-muted-foreground">Correct</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-red-600">{incorrectAnswers}</div>
-              <div className="text-sm text-muted-foreground">Incorrect</div>
-            </div>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+        <div className="space-y-4">
+          <Link href="/dashboard">
+            <Button variant="ghost" size="sm">
+              ← Back to Dashboard
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Quiz Results</h1>
+            <p className="text-xl text-muted-foreground mt-2">{quiz.title}</p>
           </div>
-          {attempt.time_taken && (
-            <div className="mt-4 text-sm text-muted-foreground text-center">
-              Time taken: {Math.floor(attempt.time_taken / 60)} minutes{" "}
-              {attempt.time_taken % 60} seconds
+        </div>
+
+        <Card className={`${getScoreBg(attempt.score)} border-2`}>
+          <CardHeader className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-6 w-6 text-amber-500" />
+                  <CardTitle className="text-2xl">{getEncouragingMessage(attempt.score)}</CardTitle>
+                </div>
+                <CardDescription className="text-base">
+                  {attempt.marks_obtained.toFixed(1)} out of {attempt.total_marks} marks earned
+                </CardDescription>
+              </div>
+              <div className="text-right">
+                <div className={`text-5xl font-bold ${getScoreColor(attempt.score)}`}>{attempt.score.toFixed(0)}%</div>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Question Results */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Detailed Results</h2>
-        {attemptAnswers?.map((answer, index) => {
-          const question = answer.questions as { id: string; question_text: string; type: string; answer?: string; explanation?: string; marks?: number } | null;
-          if (!question) return null;
+            <div className="pt-4">
+              <Progress value={attempt.score} className="h-3" />
+            </div>
+          </CardHeader>
 
-          return (
-            <Card key={answer.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <span>Question {index + 1}</span>
-                      <Badge variant="secondary">{question.type}</Badge>
-                      {answer.is_correct ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-600" />
-                      )}
-                    </CardTitle>
-                    <CardDescription className="mt-2">
-                      {question.question_text}
-                    </CardDescription>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold">
-                      {answer.marks_awarded?.toFixed(1) || 0} / {answer.marks_possible?.toFixed(1) || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">marks</div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Your Answer:</div>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-md">
-                    {answer.user_answer || <em className="text-muted-foreground">No answer provided</em>}
-                  </div>
-                </div>
+          <CardContent className="space-y-6">
+            <p className="text-lg leading-relaxed">{overallFeedback}</p>
 
-                {!answer.is_correct && question.answer && (
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground">Correct Answer:</div>
-                    <div className="mt-1 p-3 bg-green-50 rounded-md text-green-900">
-                      {question.answer}
-                    </div>
-                  </div>
-                )}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-background/50 rounded-lg p-4 text-center border">
+                <Target className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <div className="text-3xl font-bold">{totalQuestions}</div>
+                <div className="text-sm text-muted-foreground mt-1">Total Questions</div>
+              </div>
 
-                {answer.ai_feedback && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <div className="text-sm font-medium text-blue-900">Feedback:</div>
-                        <div className="text-sm text-blue-800 mt-1">{answer.ai_feedback}</div>
+              <div className="bg-background/50 rounded-lg p-4 text-center border border-green-200 dark:border-green-800">
+                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-600 dark:text-green-400" />
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400">{correctAnswers}</div>
+                <div className="text-sm text-muted-foreground mt-1">Correct</div>
+              </div>
+
+              <div className="bg-background/50 rounded-lg p-4 text-center border border-red-200 dark:border-red-800">
+                <XCircle className="h-8 w-8 mx-auto mb-2 text-red-600 dark:text-red-400" />
+                <div className="text-3xl font-bold text-red-600 dark:text-red-400">{incorrectAnswers}</div>
+                <div className="text-sm text-muted-foreground mt-1">Incorrect</div>
+              </div>
+            </div>
+
+            {attempt.time_taken && (
+              <div className="text-center pt-2 text-muted-foreground">
+                <span className="text-sm">
+                  Completed in {Math.floor(attempt.time_taken / 60)} minutes {attempt.time_taken % 60} seconds
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-3xl font-semibold tracking-tight">Answer Review</h2>
+            <p className="text-muted-foreground mt-1">Review each question and learn from explanations</p>
+          </div>
+
+          <div className="space-y-4">
+            {attemptAnswers?.map((answer, index) => {
+              const question = answer.questions as {
+                id: string
+                question_text: string
+                type: string
+                answer?: string
+                explanation?: string
+                marks?: number
+              } | null
+              if (!question) return null
+
+              return (
+                <Card key={answer.id} className="border-2">
+                  <CardHeader>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="outline" className="text-base">
+                            Question {index + 1}
+                          </Badge>
+                          <Badge variant="secondary">{question.type}</Badge>
+                          {answer.is_correct ? (
+                            <Badge className="bg-green-600 hover:bg-green-700">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Correct
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Incorrect
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-lg leading-relaxed font-medium">{question.question_text}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-2xl font-bold">{answer.marks_awarded?.toFixed(1) || 0}</div>
+                        <div className="text-xs text-muted-foreground">/ {answer.marks_possible?.toFixed(1) || 0}</div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  </CardHeader>
 
-                {question.explanation && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-md p-3">
-                    <div className="text-sm font-medium text-purple-900">Explanation:</div>
-                    <div className="text-sm text-purple-800 mt-1">{question.explanation}</div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="text-sm font-semibold text-muted-foreground">Your Answer</div>
+                      <div
+                        className={clsx(
+                          "p-4 rounded-lg border-2",
+                          answer.is_correct
+                            ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
+                            : "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800",
+                        )}
+                      >
+                        {answer.user_answer || <em className="text-muted-foreground">No answer provided</em>}
+                      </div>
+                    </div>
 
-      {/* Actions */}
-      <div className="flex gap-3 justify-center pb-8">
-        <Link href="/dashboard">
-          <Button variant="outline">Back to Dashboard</Button>
-        </Link>
-        <Link href={`/quiz/${quizId}`}>
-          <Button>Retake Quiz</Button>
-        </Link>
+                    {!answer.is_correct && question.answer && (
+                      <div className="space-y-2">
+                        <div className="text-sm font-semibold text-muted-foreground">Correct Answer</div>
+                        <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950 border-2 border-green-200 dark:border-green-800">
+                          {question.answer}
+                        </div>
+                      </div>
+                    )}
+
+                    {answer.ai_feedback && (
+                      <div className="bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <div className="text-sm font-semibold text-blue-900 dark:text-blue-100">AI Feedback</div>
+                            <div className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                              {answer.ai_feedback}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {question.explanation && (
+                      <div className="bg-purple-50 dark:bg-purple-950 border-2 border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <Lightbulb className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                              Explanation
+                            </div>
+                            <div className="text-sm text-purple-800 dark:text-purple-200 leading-relaxed">
+                              {question.explanation}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 justify-center pb-8">
+          <Button variant="outline" size="lg" asChild>
+            <Link href="/dashboard">Back to Dashboard</Link>
+          </Button>
+          <Button size="lg" asChild>
+            <Link href={`/quiz/${quizId}`}>Retake Quiz</Link>
+          </Button>
+        </div>
       </div>
     </div>
-  );
+  )
 }
