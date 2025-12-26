@@ -172,11 +172,12 @@ export const getColumns = (
               <DropdownMenuItem onClick={() => onStartQuiz(quiz.id)}>
                 View Quiz
               </DropdownMenuItem>
-              <DropdownMenuItem
+              {/* Uncomment when share functionality is ready */}
+              {/* <DropdownMenuItem
                 onClick={() => console.log("Share quiz", quiz.id)}
               >
                 Share
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
               <DropdownMenuItem
                 onClick={() => onDeleteQuiz(quiz.id)}
                 className="text-red-600"
