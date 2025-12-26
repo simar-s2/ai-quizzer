@@ -2,8 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, LogOut, Home, LayoutDashboard, Zap, Sun, Moon } from "lucide-react"
-// import { BarChart3, Settings, HelpCircle } from "lucide-react" // Uncomment when routes are added
+import { Menu, LogOut, Home, LayoutDashboard, Zap, Sun, Moon, Settings } from "lucide-react"
+// import { BarChart3, HelpCircle } from "lucide-react" // Uncomment when routes are added
 import Link from "next/link"
 import { useAuth } from "@/components/AuthProvider"
 import { useTheme } from "next-themes"
@@ -114,6 +114,12 @@ export default function Navbar() {
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="cursor-pointer">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />
@@ -153,6 +159,13 @@ export default function Navbar() {
                     >
                       <LayoutDashboard className="h-5 w-5 text-muted-foreground" />
                       <span className="font-medium">Dashboard</span>
+                    </Link>
+                    <Link
+                      href="/settings"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors"
+                    >
+                      <Settings className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium">Settings</span>
                     </Link>
                   </>
                 )}
