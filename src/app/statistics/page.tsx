@@ -6,8 +6,33 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LineChart, BarChart3, PieChart, TrendingUp, Target, Award, Clock, Brain, Zap, Calendar } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/components/AuthProvider"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
+import Spinner from "@/components/Spinner"
 
 export default function StatisticsPage() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/")
+    }
+  }, [user, loading, router])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">

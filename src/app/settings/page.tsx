@@ -8,10 +8,32 @@ import { PreferencesSection } from "@/components/settings/PreferencesSection"
 import { DataPrivacySection } from "@/components/settings/DataPrivacySection"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Palette, Bell, Sliders, Shield } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
+import Spinner from "@/components/Spinner"
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
+  const router = useRouter()
   const userInitials = user?.email?.slice(0, 2).toUpperCase() || "U"
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/")
+    }
+  }, [user, loading, router])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
 
   return (
     <div className="min-h-screen">

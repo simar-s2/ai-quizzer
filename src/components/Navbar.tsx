@@ -2,8 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, LogOut, Home, LayoutDashboard, Zap, Sun, Moon, Settings } from "lucide-react"
-// import { BarChart3, HelpCircle } from "lucide-react" // Uncomment when routes are added
+import { Menu, LogOut, Home, LayoutDashboard, Zap, Sun, Moon, Settings, BarChart3, HelpCircle } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/components/AuthProvider"
 import { useTheme } from "next-themes"
@@ -55,8 +54,18 @@ export default function Navbar() {
                     Dashboard
                   </Button>
                 </Link>
+                <Link href="/statistics">
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                    Statistics
+                  </Button>
+                </Link>
               </>
             )}
+            <Link href="/help">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                Help
+              </Button>
+            </Link>
           </nav>
         </div>
 
@@ -115,6 +124,12 @@ export default function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link href="/statistics" className="cursor-pointer">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Statistics
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href="/settings" className="cursor-pointer">
                       <Settings className="h-4 w-4 mr-2" />
                       Settings
@@ -161,6 +176,13 @@ export default function Navbar() {
                       <span className="font-medium">Dashboard</span>
                     </Link>
                     <Link
+                      href="/statistics"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors"
+                    >
+                      <BarChart3 className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium">Statistics</span>
+                    </Link>
+                    <Link
                       href="/settings"
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors"
                     >
@@ -169,6 +191,13 @@ export default function Navbar() {
                     </Link>
                   </>
                 )}
+                <Link
+                  href="/help"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <HelpCircle className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Help</span>
+                </Link>
                 <div className="pt-4 mt-4 border-t space-y-3">
                   {!session ? (
                     <Link href="/auth">
