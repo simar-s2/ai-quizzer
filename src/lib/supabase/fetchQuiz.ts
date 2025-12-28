@@ -13,15 +13,21 @@ export async function fetchQuizWithQuestions(quizId: string): Promise<{
     return { quiz: null, questions: null };
   }
 
-  // Fetch quiz
+  // Fetch quiz and verify ownership
   const { data: quiz, error: quizError } = await supabase
     .from("quizzes")
     .select("*")
     .eq("id", quizId)
+    .eq("user_id", user.id) // Only fetch quiz if it belongs to the user
     .single();
 
   if (quizError) {
     console.error("Error fetching quiz:", quizError);
+    return { quiz: null, questions: null };
+  }
+
+  // If quiz doesn't exist or doesn't belong to user, return null
+  if (!quiz) {
     return { quiz: null, questions: null };
   }
 
