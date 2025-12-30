@@ -36,10 +36,14 @@ export async function GET(request: Request) {
     
     if (error) {
       console.error('Error exchanging code for session:', error)
-      return NextResponse.redirect(new URL('/auth?error=auth_callback_error', request.url))
+      // Use the request's origin, not localhost
+      const origin = requestUrl.origin
+      return NextResponse.redirect(new URL('/auth?error=auth_callback_error', origin))
     }
   }
 
-  // Redirect to the dashboard or specified next URL
-  return NextResponse.redirect(new URL(next, request.url))
+  // IMPORTANT FIX: Use the request's origin instead of request.url
+  // This ensures we redirect to the current domain, not localhost
+  const origin = requestUrl.origin
+  return NextResponse.redirect(new URL(next, origin))
 }
