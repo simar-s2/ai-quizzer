@@ -4,6 +4,16 @@ import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
+  
+  // DEBUG LOGGING - Check what we're receiving
+  console.log('==== OAUTH CALLBACK DEBUG ====')
+  console.log('Full URL:', requestUrl.href)
+  console.log('Origin:', requestUrl.origin)
+  console.log('Host:', requestUrl.host)
+  console.log('Hostname:', requestUrl.hostname)
+  console.log('Referer:', request.headers.get('referer'))
+  console.log('==============================')
+  
   const code = requestUrl.searchParams.get('code')
   const next = requestUrl.searchParams.get('next') || '/dashboard'
 
@@ -24,7 +34,6 @@ export async function GET(request: Request) {
                 cookieStore.set(name, value, options)
               )
             } catch (error) {
-              // Handle cookie setting errors
               console.error('Error setting cookies:', error)
             }
           },
@@ -36,14 +45,16 @@ export async function GET(request: Request) {
     
     if (error) {
       console.error('Error exchanging code for session:', error)
-      // Use the request's origin, not localhost
       const origin = requestUrl.origin
       return NextResponse.redirect(new URL('/auth?error=auth_callback_error', origin))
     }
   }
 
-  // IMPORTANT FIX: Use the request's origin instead of request.url
-  // This ensures we redirect to the current domain, not localhost
+  // Use the request's origin instead of request.url
   const origin = requestUrl.origin
-  return NextResponse.redirect(new URL(next, origin))
+  const redirectUrl = new URL(next, origin)
+  
+  console.log('Final redirect URL:', redirectUrl.href)
+  
+  return NextResponse.redirect(redirectUrl)
 }

@@ -14,54 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      answers: {
-        Row: {
-          id: string
-          is_correct: boolean | null
-          question_id: string | null
-          quiz_id: string | null
-          score: number | null
-          submitted_at: string | null
-          user_answer: string | null
-          user_id: string | null
-        }
-        Insert: {
-          id?: string
-          is_correct?: boolean | null
-          question_id?: string | null
-          quiz_id?: string | null
-          score?: number | null
-          submitted_at?: string | null
-          user_answer?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          id?: string
-          is_correct?: boolean | null
-          question_id?: string | null
-          quiz_id?: string | null
-          score?: number | null
-          submitted_at?: string | null
-          user_answer?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "answers_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "questions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "answers_quiz_id_fkey"
-            columns: ["quiz_id"]
-            isOneToOne: false
-            referencedRelation: "quizzes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       attempt_answers: {
         Row: {
           ai_feedback: string | null
@@ -103,6 +55,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "attempts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempt_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "recent_activity"
+            referencedColumns: ["attempt_id"]
+          },
+          {
+            foreignKeyName: "attempt_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_performance"
+            referencedColumns: ["question_id"]
           },
           {
             foreignKeyName: "attempt_answers_question_id_fkey"
@@ -158,8 +124,22 @@ export type Database = {
             foreignKeyName: "attempts_quiz_id_fkey"
             columns: ["quiz_id"]
             isOneToOne: false
+            referencedRelation: "quiz_performance_stats"
+            referencedColumns: ["quiz_id"]
+          },
+          {
+            foreignKeyName: "attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
             referencedRelation: "quizzes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "recent_activity"
+            referencedColumns: ["quiz_id"]
           },
         ]
       }
@@ -256,9 +236,169 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          auto_submit: boolean | null
+          created_at: string | null
+          daily_goal: number | null
+          default_difficulty:
+            | Database["public"]["Enums"]["difficulty_level"]
+            | null
+          default_question_count: number | null
+          email_notifications: boolean | null
+          language: string | null
+          preferred_study_time: string | null
+          quiz_reminders: boolean | null
+          settings: Json | null
+          show_explanations: boolean | null
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_submit?: boolean | null
+          created_at?: string | null
+          daily_goal?: number | null
+          default_difficulty?:
+            | Database["public"]["Enums"]["difficulty_level"]
+            | null
+          default_question_count?: number | null
+          email_notifications?: boolean | null
+          language?: string | null
+          preferred_study_time?: string | null
+          quiz_reminders?: boolean | null
+          settings?: Json | null
+          show_explanations?: boolean | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_submit?: boolean | null
+          created_at?: string | null
+          daily_goal?: number | null
+          default_difficulty?:
+            | Database["public"]["Enums"]["difficulty_level"]
+            | null
+          default_question_count?: number | null
+          email_notifications?: boolean | null
+          language?: string | null
+          preferred_study_time?: string | null
+          quiz_reminders?: boolean | null
+          settings?: Json | null
+          show_explanations?: boolean | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      difficulty_performance: {
+        Row: {
+          attempts_at_difficulty: number | null
+          average_score: number | null
+          best_score: number | null
+          difficulty: Database["public"]["Enums"]["difficulty_level"] | null
+          high_scores_count: number | null
+          low_scores_count: number | null
+          medium_scores_count: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      question_performance: {
+        Row: {
+          average_marks_awarded: number | null
+          marks_possible: number | null
+          question_id: string | null
+          question_text: string | null
+          question_type: Database["public"]["Enums"]["question_type"] | null
+          quiz_id: string | null
+          success_rate_percentage: number | null
+          times_answered: number | null
+          times_correct: number | null
+          times_incorrect: number | null
+        }
+        Relationships: []
+      }
+      question_type_performance: {
+        Row: {
+          average_marks_earned: number | null
+          question_type: Database["public"]["Enums"]["question_type"] | null
+          questions_answered: number | null
+          questions_correct: number | null
+          success_rate_percentage: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      quiz_performance_stats: {
+        Row: {
+          average_score: number | null
+          average_time_seconds: number | null
+          difficulty: Database["public"]["Enums"]["difficulty_level"] | null
+          highest_score: number | null
+          lowest_score: number | null
+          quiz_id: string | null
+          subject: string | null
+          title: string | null
+          total_attempts: number | null
+        }
+        Relationships: []
+      }
+      recent_activity: {
+        Row: {
+          activity_rank: number | null
+          attempt_id: string | null
+          completed_at: string | null
+          difficulty: Database["public"]["Enums"]["difficulty_level"] | null
+          marks_obtained: number | null
+          quiz_id: string | null
+          quiz_title: string | null
+          score: number | null
+          subject: string | null
+          time_taken: number | null
+          total_marks: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      study_streaks: {
+        Row: {
+          daily_average_score: number | null
+          quizzes_completed: number | null
+          study_date: string | null
+          total_study_time_seconds: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      subject_performance: {
+        Row: {
+          attempts_in_subject: number | null
+          average_score: number | null
+          best_score: number | null
+          lowest_score: number | null
+          quizzes_in_subject: number | null
+          subject: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      user_quiz_stats: {
+        Row: {
+          average_score: number | null
+          best_score: number | null
+          lowest_score: number | null
+          quizzes_attempted: number | null
+          total_attempts: number | null
+          total_time_spent_seconds: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

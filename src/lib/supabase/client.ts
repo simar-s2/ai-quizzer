@@ -24,11 +24,9 @@ export type Enums<T extends keyof Database['public']['Enums']> =
 // Specific types for your app
 export type Quiz = Tables<'quizzes'>
 export type Question = Tables<'questions'>
-export type Answer = Tables<'answers'>
 
 export type QuizInsert = InsertDto<'quizzes'>
 export type QuestionInsert = InsertDto<'questions'>
-export type AnswerInsert = InsertDto<'answers'>
 
 // Enum types
 export type QuestionType = Enums<'question_type'>
@@ -36,8 +34,14 @@ export type DifficultyLevel = Enums<'difficulty_level'>
 export type QuizStatus = Enums<'quiz_status'>
 export type VisibilityStatus = Enums<'visibility_status'>
 
+// Attempt types
 export type Attempt = Tables<'attempts'>
 export type AttemptAnswer = Tables<'attempt_answers'>
 
 export type AttemptInsert = InsertDto<'attempts'>
 export type AttemptAnswerInsert = InsertDto<'attempt_answers'>
+
+// User preferences types
+export type UserPreferences = Tables<'user_preferences'>
+export type UserPreferencesInsert = InsertDto<'user_preferences'>
+export type UserPreferencesUpdate = UpdateDto<'user_preferences'>

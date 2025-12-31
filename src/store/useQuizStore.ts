@@ -1,10 +1,16 @@
 // store/useQuizStore.ts
 import { create } from "zustand";
-import { AnswerInsert } from "@/lib/supabase/client";
+
+// Simple type for storing answers in the store
+// This matches what you send to the /api/mark-quiz endpoint
+type QuizAnswer = {
+  question_id: string;
+  user_answer: string;
+};
 
 type QuizState = {
-  answers: AnswerInsert[];
-  addAnswer: (answer: AnswerInsert) => void;
+  answers: QuizAnswer[];
+  addAnswer: (answer: QuizAnswer) => void;
   clearAnswers: () => void;
 };
 
