@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 
 const client = new GoogleGenAI({
   apiKey: process.env.GOOGLE_API_KEY || "",
@@ -34,17 +32,6 @@ interface AIMarkingResponse {
   percentage: number;
   question_results: MarkingResult[];
 }
-
-// Zod schema for AI marking response
-const markedAnswerSchema = z.object({
-  question_index: z.number(),
-  marks_awarded: z.number(),
-  feedback: z.string(),
-});
-
-const markingResponseSchema = z.object({
-  marked_answers: z.array(markedAnswerSchema),
-});
 
 async function markAnswersWithAI(
   answers: AnswerToMark[]
@@ -90,7 +77,6 @@ IMPORTANT INSTRUCTIONS:
 - Provide DETAILED, THOROUGH feedback. Do NOT truncate or cut off your feedback. 
 - Write complete sentences and paragraphs. Include specific examples of what the student did right or wrong.
 - The feedback should be AT LEAST 2-3 complete sentences, and longer for complex answers.
-- Do NOT use ellipsis (...) or cut off your feedback mid-sentence.
 
 Questions and Answers to Mark:
 ${manualMark
@@ -113,25 +99,42 @@ ${a.user_answer || "(No answer provided)"}
 For each question, provide:
 - question_index: the index number (0, 1, 2, etc.)
 - marks_awarded: decimal number between 0 and the marks_possible
-- feedback: DETAILED, THOROUGH constructive feedback (minimum 2-3 complete sentences, longer for complex answers). Do NOT truncate or use ellipsis.`;
+- feedback: DETAILED, THOROUGH constructive feedback (minimum 2-3 complete sentences, longer for complex answers)`;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const jsonSchema = zodToJsonSchema(markingResponseSchema as any);
-      
       const response = await client.models.generateContent({
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-2.5-flash",
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          responseJsonSchema: jsonSchema as any,
-          temperature: 0.3,
-          maxOutputTokens: 8192, // Increase output limit to allow longer feedback
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              marked_answers: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question_index: { type: Type.NUMBER },
+                    marks_awarded: { type: Type.NUMBER },
+                    feedback: { type: Type.STRING },
+                  },
+                  required: ["question_index", "marks_awarded", "feedback"],
+                },
+              },
+            },
+            required: ["marked_answers"],
+          },
         },
       });
 
-      const aiResult = markingResponseSchema.parse(JSON.parse(response.text || "{}"));
+      const aiResult = JSON.parse(response.text || "{}") as {
+        marked_answers: Array<{
+          question_index: number;
+          marks_awarded: number;
+          feedback: string;
+        }>;
+      };
 
       // Process AI results
       aiResult.marked_answers.forEach((marked) => {
@@ -170,7 +173,7 @@ For each question, provide:
     } catch (error) {
       console.error("AI Marking Error:", error);
       
-      // Enhanced fallback: use simple heuristics for marking
+      // Enhanced fallback without ellipsis
       manualMark.forEach((question) => {
         const userAnswer = question.user_answer?.trim() || "";
         const correctAnswer = question.correct_answer?.trim().toLowerCase() || "";
@@ -199,27 +202,23 @@ For each question, provide:
           // Award marks based on keyword matching
           if (matchRatio >= 0.8) {
             marksAwarded = question.marks_possible * 0.9;
-            feedback = "Your answer covers most of the key points. Well done! You demonstrated a strong understanding of the material with clear explanations and relevant examples.";
+            feedback = "Your answer covers most of the key points and demonstrates a strong understanding of the material. Well done! You have clearly explained the main concepts with relevant details and examples.";
             correctnessStatus = marksAwarded >= question.marks_possible ? 'correct' : 'partial';
           } else if (matchRatio >= 0.6) {
             marksAwarded = question.marks_possible * 0.7;
-            feedback = "Your answer includes several correct elements and shows good understanding. To improve, consider adding more detail about the following key concepts: " + 
-                      correctAnswer.substring(0, 150) + "...";
+            feedback = "Your answer includes several correct elements and shows good understanding of the topic. To improve your score, consider adding more detail and depth to your explanation. Make sure to address all aspects of the question and provide specific examples where relevant.";
             correctnessStatus = 'partial';
           } else if (matchRatio >= 0.4) {
             marksAwarded = question.marks_possible * 0.5;
-            feedback = "Your answer touches on some relevant points but needs more development and depth. You've identified some key ideas, but the explanation could be more thorough. " +
-                      "Key concept to focus on: " + correctAnswer.substring(0, 150) + "...";
+            feedback = "Your answer touches on some relevant points but needs more development and depth. You have identified some key ideas, but the explanation could be more thorough and comprehensive. Review the material carefully and ensure you understand the core concepts before attempting similar questions.";
             correctnessStatus = 'partial';
           } else if (matchRatio >= 0.2) {
             marksAwarded = question.marks_possible * 0.3;
-            feedback = "Your answer shows some understanding but is incomplete and missing several key elements. While you've made an attempt, the response needs significant improvement. " +
-                      "Review the correct answer: " + correctAnswer.substring(0, 150) + "...";
+            feedback = "Your answer shows some basic understanding but is missing several key elements and lacks sufficient detail. The response needs significant improvement in both content and explanation. I recommend reviewing the correct answer carefully and identifying which important concepts you missed in your response.";
             correctnessStatus = 'partial';
           } else {
             marksAwarded = question.marks_possible * 0.1;
-            feedback = "Your answer needs significant improvement and doesn't address the core concepts of the question. Please review the material carefully and focus on these key points: " +
-                      correctAnswer.substring(0, 200) + "...";
+            feedback = "Your answer does not adequately address the question and is missing most of the key concepts required for a complete response. Please review the material thoroughly and focus on understanding the fundamental principles. Take time to study the correct answer and identify what information was expected in a comprehensive response.";
             correctnessStatus = marksAwarded > 0 ? 'partial' : 'incorrect';
           }
         }
@@ -250,11 +249,11 @@ For each question, provide:
   } else if (percentage >= 75) {
     overallFeedback = "Great job! You showed strong comprehension of the key concepts. Review the feedback for areas where you can further strengthen your understanding.";
   } else if (percentage >= 60) {
-    overallFeedback = "Good effort! You're on the right track and understand several important concepts. Focus on the feedback provided to fill in the gaps and deepen your knowledge.";
+    overallFeedback = "Good effort! You are on the right track and understand several important concepts. Focus on the feedback provided to fill in the gaps and deepen your knowledge.";
   } else if (percentage >= 50) {
-    overallFeedback = "You're making progress and have grasped some basic concepts. Take time to review the material thoroughly and focus on the areas highlighted in the feedback to improve your understanding.";
+    overallFeedback = "You are making progress and have grasped some basic concepts. Take time to review the material thoroughly and focus on the areas highlighted in the feedback to improve your understanding.";
   } else {
-    overallFeedback = "Keep studying and don't give up! Review the correct answers carefully and try to understand the underlying concepts. The feedback provided will help guide your learning. Consider reviewing the material again before your next attempt.";
+    overallFeedback = "Keep studying and do not give up! Review the correct answers carefully and try to understand the underlying concepts. The feedback provided will help guide your learning. Consider reviewing the material again before your next attempt.";
   }
 
   return {
