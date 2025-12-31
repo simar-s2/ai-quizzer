@@ -21,6 +21,7 @@ interface AnswerToMark {
 interface MarkingResult {
   question_id: string;
   is_correct: boolean;
+  correctness_status: 'correct' | 'partial' | 'incorrect';
   marks_awarded: number;
   marks_possible: number;
   feedback: string;
@@ -67,6 +68,7 @@ async function markAnswersWithAI(
     results.push({
       question_id: answer.question_id,
       is_correct: isCorrect,
+      correctness_status: isCorrect ? 'correct' : 'incorrect',
       marks_awarded: isCorrect ? answer.marks_possible : 0,
       marks_possible: answer.marks_possible,
       feedback: isCorrect
@@ -78,12 +80,17 @@ async function markAnswersWithAI(
   // Use AI to mark essay and short answer questions
   if (manualMark.length > 0) {
     const prompt = `You are an expert teacher marking student answers. For each answer provided, give:
-1. A score out of the maximum marks possible (can be decimal)
-2. Constructive feedback explaining why the student received that score
+1. A score out of the maximum marks possible (can be decimal for partial credit)
+2. Constructive, DETAILED feedback explaining why the student received that score
 3. What they did well and what could be improved
 
-Mark fairly but critically. Award full marks only for comprehensive, accurate answers.
-Give partial credit for partially correct answers based on how much of the key concepts they covered.
+IMPORTANT INSTRUCTIONS:
+- Mark fairly but critically. Award full marks only for comprehensive, accurate answers.
+- Give partial credit (0.5 to marks_possible-0.5) for partially correct answers based on how much of the key concepts they covered.
+- Provide DETAILED, THOROUGH feedback. Do NOT truncate or cut off your feedback. 
+- Write complete sentences and paragraphs. Include specific examples of what the student did right or wrong.
+- The feedback should be AT LEAST 2-3 complete sentences, and longer for complex answers.
+- Do NOT use ellipsis (...) or cut off your feedback mid-sentence.
 
 Questions and Answers to Mark:
 ${manualMark
@@ -106,20 +113,21 @@ ${a.user_answer || "(No answer provided)"}
 For each question, provide:
 - question_index: the index number (0, 1, 2, etc.)
 - marks_awarded: decimal number between 0 and the marks_possible
-- feedback: detailed constructive feedback explaining the score`;
+- feedback: DETAILED, THOROUGH constructive feedback (minimum 2-3 complete sentences, longer for complex answers). Do NOT truncate or use ellipsis.`;
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const jsonSchema = zodToJsonSchema(markingResponseSchema as any);
       
       const response = await client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash-exp",
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           responseJsonSchema: jsonSchema as any,
           temperature: 0.3,
+          maxOutputTokens: 8192, // Increase output limit to allow longer feedback
         },
       });
 
@@ -137,11 +145,23 @@ For each question, provide:
           Math.max(0, marked.marks_awarded),
           question.marks_possible
         );
-        const isCorrect = marksAwarded === question.marks_possible;
+        
+        // Determine correctness status based on marks awarded
+        let correctnessStatus: 'correct' | 'partial' | 'incorrect';
+        if (marksAwarded >= question.marks_possible) {
+          correctnessStatus = 'correct';
+        } else if (marksAwarded > 0) {
+          correctnessStatus = 'partial';
+        } else {
+          correctnessStatus = 'incorrect';
+        }
+
+        const isCorrect = correctnessStatus === 'correct';
 
         results.push({
           question_id: question.question_id,
           is_correct: isCorrect,
+          correctness_status: correctnessStatus,
           marks_awarded: Math.round(marksAwarded * 100) / 100,
           marks_possible: question.marks_possible,
           feedback: marked.feedback || "Answer received.",
@@ -158,10 +178,12 @@ For each question, provide:
         
         let marksAwarded = 0;
         let feedback = "";
+        let correctnessStatus: 'correct' | 'partial' | 'incorrect' = 'incorrect';
 
         if (!userAnswer) {
           marksAwarded = 0;
           feedback = "No answer provided.";
+          correctnessStatus = 'incorrect';
         } else {
           // Simple keyword matching for partial credit
           const correctWords = correctAnswer.split(/\s+/).filter(w => w.length > 3);
@@ -177,29 +199,35 @@ For each question, provide:
           // Award marks based on keyword matching
           if (matchRatio >= 0.8) {
             marksAwarded = question.marks_possible * 0.9;
-            feedback = "Your answer covers most of the key points. Well done!";
+            feedback = "Your answer covers most of the key points. Well done! You demonstrated a strong understanding of the material with clear explanations and relevant examples.";
+            correctnessStatus = marksAwarded >= question.marks_possible ? 'correct' : 'partial';
           } else if (matchRatio >= 0.6) {
             marksAwarded = question.marks_possible * 0.7;
-            feedback = "Your answer includes several correct elements. Consider adding more detail about: " + 
-                      correctAnswer.substring(0, 100) + "...";
+            feedback = "Your answer includes several correct elements and shows good understanding. To improve, consider adding more detail about the following key concepts: " + 
+                      correctAnswer.substring(0, 150) + "...";
+            correctnessStatus = 'partial';
           } else if (matchRatio >= 0.4) {
             marksAwarded = question.marks_possible * 0.5;
-            feedback = "Your answer touches on some relevant points but needs more development. " +
-                      "Key concept: " + correctAnswer.substring(0, 100) + "...";
+            feedback = "Your answer touches on some relevant points but needs more development and depth. You've identified some key ideas, but the explanation could be more thorough. " +
+                      "Key concept to focus on: " + correctAnswer.substring(0, 150) + "...";
+            correctnessStatus = 'partial';
           } else if (matchRatio >= 0.2) {
             marksAwarded = question.marks_possible * 0.3;
-            feedback = "Your answer shows some understanding but is incomplete. " +
-                      "Review the correct answer: " + correctAnswer.substring(0, 100) + "...";
+            feedback = "Your answer shows some understanding but is incomplete and missing several key elements. While you've made an attempt, the response needs significant improvement. " +
+                      "Review the correct answer: " + correctAnswer.substring(0, 150) + "...";
+            correctnessStatus = 'partial';
           } else {
             marksAwarded = question.marks_possible * 0.1;
-            feedback = "Your answer needs significant improvement. The expected answer should include: " +
-                      correctAnswer.substring(0, 150) + "...";
+            feedback = "Your answer needs significant improvement and doesn't address the core concepts of the question. Please review the material carefully and focus on these key points: " +
+                      correctAnswer.substring(0, 200) + "...";
+            correctnessStatus = marksAwarded > 0 ? 'partial' : 'incorrect';
           }
         }
 
         results.push({
           question_id: question.question_id,
-          is_correct: marksAwarded === question.marks_possible,
+          is_correct: correctnessStatus === 'correct',
+          correctness_status: correctnessStatus,
           marks_awarded: Math.round(marksAwarded * 100) / 100,
           marks_possible: question.marks_possible,
           feedback: feedback,
@@ -218,15 +246,15 @@ For each question, provide:
   // Generate overall feedback
   let overallFeedback = "";
   if (percentage >= 90) {
-    overallFeedback = "Outstanding work! You demonstrated excellent understanding of the material.";
+    overallFeedback = "Outstanding work! You demonstrated excellent understanding of the material with comprehensive and well-structured answers.";
   } else if (percentage >= 75) {
-    overallFeedback = "Great job! You showed strong comprehension with room for minor improvements.";
+    overallFeedback = "Great job! You showed strong comprehension of the key concepts. Review the feedback for areas where you can further strengthen your understanding.";
   } else if (percentage >= 60) {
-    overallFeedback = "Good effort! Review the feedback to strengthen your understanding.";
+    overallFeedback = "Good effort! You're on the right track and understand several important concepts. Focus on the feedback provided to fill in the gaps and deepen your knowledge.";
   } else if (percentage >= 50) {
-    overallFeedback = "You're making progress. Focus on the areas highlighted in the feedback.";
+    overallFeedback = "You're making progress and have grasped some basic concepts. Take time to review the material thoroughly and focus on the areas highlighted in the feedback to improve your understanding.";
   } else {
-    overallFeedback = "Keep studying! Review the material and try again to improve your score.";
+    overallFeedback = "Keep studying and don't give up! Review the correct answers carefully and try to understand the underlying concepts. The feedback provided will help guide your learning. Consider reviewing the material again before your next attempt.";
   }
 
   return {
@@ -329,13 +357,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Save individual answer results
+    // Save individual answer results with correctness_status
     const attemptAnswers = markingResult.question_results.map((result) => ({
       attempt_id: attempt.id,
       question_id: result.question_id,
       user_answer: answers.find((a: { question_id: string; user_answer?: string }) => a.question_id === result.question_id)
         ?.user_answer || null,
       is_correct: result.is_correct,
+      correctness_status: result.correctness_status,
       marks_awarded: result.marks_awarded,
       marks_possible: result.marks_possible,
       ai_feedback: result.feedback,

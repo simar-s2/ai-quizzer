@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { CheckCircle2, XCircle, Lightbulb, Trophy, Target } from "lucide-react"
+import { CheckCircle2, XCircle, Lightbulb, Trophy, Target, MinusCircle } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import clsx from "clsx"
 
@@ -69,8 +69,9 @@ export default async function QuizResultsPage({
   const overallFeedback = feedback?.overall || "Great effort! Keep practicing to improve your score."
 
   const totalQuestions = attemptAnswers?.length || 0
-  const correctAnswers = attemptAnswers?.filter((a) => a.is_correct).length || 0
-  const incorrectAnswers = totalQuestions - correctAnswers
+  const correctAnswers = attemptAnswers?.filter((a) => a.correctness_status === 'correct').length || 0
+  const partialAnswers = attemptAnswers?.filter((a) => a.correctness_status === 'partial').length || 0
+  const incorrectAnswers = attemptAnswers?.filter((a) => a.correctness_status === 'incorrect').length || 0
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return "text-green-600 dark:text-green-400"
@@ -131,13 +132,13 @@ export default async function QuizResultsPage({
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <p className="text-lg leading-relaxed">{overallFeedback}</p>
+            <p className="text-lg leading-relaxed whitespace-pre-wrap">{overallFeedback}</p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-background/50 rounded-lg p-4 text-center border">
                 <Target className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <div className="text-3xl font-bold">{totalQuestions}</div>
-                <div className="text-sm text-muted-foreground mt-1">Total Questions</div>
+                <div className="text-sm text-muted-foreground mt-1">Total</div>
               </div>
 
               <div className="bg-background/50 rounded-lg p-4 text-center border border-green-200 dark:border-green-800">
@@ -145,6 +146,14 @@ export default async function QuizResultsPage({
                 <div className="text-3xl font-bold text-green-600 dark:text-green-400">{correctAnswers}</div>
                 <div className="text-sm text-muted-foreground mt-1">Correct</div>
               </div>
+
+              {partialAnswers > 0 && (
+                <div className="bg-background/50 rounded-lg p-4 text-center border border-amber-200 dark:border-amber-800">
+                  <MinusCircle className="h-8 w-8 mx-auto mb-2 text-amber-600 dark:text-amber-400" />
+                  <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">{partialAnswers}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Partial</div>
+                </div>
+              )}
 
               <div className="bg-background/50 rounded-lg p-4 text-center border border-red-200 dark:border-red-800">
                 <XCircle className="h-8 w-8 mx-auto mb-2 text-red-600 dark:text-red-400" />
@@ -181,6 +190,8 @@ export default async function QuizResultsPage({
               } | null
               if (!question) return null
 
+              const correctnessStatus = answer.correctness_status || (answer.is_correct ? 'correct' : 'incorrect')
+
               return (
                 <Card key={answer.id} className="border-2">
                   <CardHeader>
@@ -191,10 +202,15 @@ export default async function QuizResultsPage({
                             Question {index + 1}
                           </Badge>
                           <Badge variant="secondary">{question.type}</Badge>
-                          {answer.is_correct ? (
+                          {correctnessStatus === 'correct' ? (
                             <Badge className="bg-green-600 hover:bg-green-700">
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                               Correct
+                            </Badge>
+                          ) : correctnessStatus === 'partial' ? (
+                            <Badge className="bg-amber-600 hover:bg-amber-700">
+                              <MinusCircle className="h-3 w-3 mr-1" />
+                              Partially Correct
                             </Badge>
                           ) : (
                             <Badge variant="destructive">
@@ -217,9 +233,11 @@ export default async function QuizResultsPage({
                       <div className="text-sm font-semibold text-muted-foreground">Your Answer</div>
                       <div
                         className={clsx(
-                          "p-4 rounded-lg border-2",
-                          answer.is_correct
+                          "p-4 rounded-lg border-2 whitespace-pre-wrap",
+                          correctnessStatus === 'correct'
                             ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
+                            : correctnessStatus === 'partial'
+                            ? "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800"
                             : "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800",
                         )}
                       >
@@ -227,10 +245,10 @@ export default async function QuizResultsPage({
                       </div>
                     </div>
 
-                    {!answer.is_correct && question.answer && (
+                    {correctnessStatus !== 'correct' && question.answer && (
                       <div className="space-y-2">
                         <div className="text-sm font-semibold text-muted-foreground">Correct Answer</div>
-                        <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950 border-2 border-green-200 dark:border-green-800">
+                        <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950 border-2 border-green-200 dark:border-green-800 whitespace-pre-wrap">
                           {question.answer}
                         </div>
                       </div>
@@ -240,9 +258,9 @@ export default async function QuizResultsPage({
                       <div className="bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4">
                         <div className="flex items-start gap-3">
                           <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                          <div className="space-y-1">
+                          <div className="space-y-1 flex-1">
                             <div className="text-sm font-semibold text-blue-900 dark:text-blue-100">AI Feedback</div>
-                            <div className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                            <div className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed whitespace-pre-wrap break-words">
                               {answer.ai_feedback}
                             </div>
                           </div>
@@ -254,11 +272,11 @@ export default async function QuizResultsPage({
                       <div className="bg-purple-50 dark:bg-purple-950 border-2 border-purple-200 dark:border-purple-800 rounded-lg p-4">
                         <div className="flex items-start gap-3">
                           <Lightbulb className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
-                          <div className="space-y-1">
+                          <div className="space-y-1 flex-1">
                             <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
                               Explanation
                             </div>
-                            <div className="text-sm text-purple-800 dark:text-purple-200 leading-relaxed">
+                            <div className="text-sm text-purple-800 dark:text-purple-200 leading-relaxed whitespace-pre-wrap break-words">
                               {question.explanation}
                             </div>
                           </div>

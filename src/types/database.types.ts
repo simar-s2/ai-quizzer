@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           ai_feedback: string | null
           attempt_id: string | null
+          correctness_status: string | null
           created_at: string | null
           id: string
           is_correct: boolean | null
@@ -29,6 +30,7 @@ export type Database = {
         Insert: {
           ai_feedback?: string | null
           attempt_id?: string | null
+          correctness_status?: string | null
           created_at?: string | null
           id?: string
           is_correct?: boolean | null
@@ -40,6 +42,7 @@ export type Database = {
         Update: {
           ai_feedback?: string | null
           attempt_id?: string | null
+          correctness_status?: string | null
           created_at?: string | null
           id?: string
           is_correct?: boolean | null
@@ -310,6 +313,7 @@ export type Database = {
       }
       question_performance: {
         Row: {
+          adjusted_success_rate_percentage: number | null
           average_marks_awarded: number | null
           marks_possible: number | null
           question_id: string | null
@@ -320,6 +324,7 @@ export type Database = {
           times_answered: number | null
           times_correct: number | null
           times_incorrect: number | null
+          times_partial: number | null
         }
         Relationships: []
       }
@@ -329,6 +334,8 @@ export type Database = {
           question_type: Database["public"]["Enums"]["question_type"] | null
           questions_answered: number | null
           questions_correct: number | null
+          questions_incorrect: number | null
+          questions_partial: number | null
           success_rate_percentage: number | null
           user_id: string | null
         }
