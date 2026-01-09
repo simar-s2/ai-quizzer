@@ -1,8 +1,9 @@
 "use server";
 import { createServerSupabaseClient } from "./server";
-import { Quiz, Question, QuizInsert, QuestionInsert } from "@/lib/supabase/client";
+import { QuizInsert, QuestionInsert } from "@/lib/supabase/client";
 
-export async function saveQuiz(quiz: Quiz, questions: Question[]): Promise<string> {
+// Accept partial quiz data from client (may include user_id but will be overridden)
+export async function saveQuiz(quiz: Partial<QuizInsert> & { title: string; difficulty: QuizInsert['difficulty'] }, questions: Omit<QuestionInsert, 'quiz_id'>[]): Promise<string> {
   const supabase = await createServerSupabaseClient();
   
   // 🔐 Get current user from the server session
@@ -17,17 +18,10 @@ export async function saveQuiz(quiz: Quiz, questions: Question[]): Promise<strin
 
   // Prepare quiz payload with proper types
   const quizInsert: QuizInsert = {
-    title: quiz.title,
-    description: quiz.description,
-    subject: quiz.subject,
-    tags: quiz.tags,
-    difficulty: quiz.difficulty,
+    ...quiz,
     user_id: user.id,
-    total_marks: quiz.total_marks,
-    total_time: quiz.total_time,
     status: quiz.status ?? "not_started",
     visibility: quiz.visibility ?? "private",
-    metadata: quiz.metadata,
   };
 
   // Insert quiz
@@ -43,12 +37,8 @@ export async function saveQuiz(quiz: Quiz, questions: Question[]): Promise<strin
 
   // Prepare questions with proper types
   const questionsInsert: QuestionInsert[] = questions.map((q) => ({
+    ...q,
     quiz_id: insertedQuiz.id,
-    question_text: q.question_text,
-    type: q.type,
-    options: q.options,
-    answer: q.answer,
-    explanation: q.explanation,
     marks: q.marks ?? 1,
     visibility: q.visibility ?? "private",
   }));

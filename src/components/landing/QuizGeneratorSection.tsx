@@ -26,6 +26,8 @@ export function QuizGeneratorSection() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [savedQuizId, setSavedQuizId] = useState<string | null>(null)
   const [rawText, setRawText] = useState("")
   const [files, setFiles] = useState<File[]>([])
   const [quizSettings, setQuizSettings] = useState<QuizSettingsType>({
@@ -37,8 +39,11 @@ export function QuizGeneratorSection() {
 
   const handleTextSubmit = async () => {
     if (!rawText.trim()) return
+    
+    // Reset state for new quiz generation
     setQuestions([])
     setQuiz(null)
+    setSavedQuizId(null)
     setLoading(true)
 
     try {
@@ -48,13 +53,15 @@ export function QuizGeneratorSection() {
         body: JSON.stringify({ text: rawText, settings: quizSettings }),
       })
       const data = await res.json()
+      
       if (data.error) {
         toast.error(data.error)
         return
       }
+      
       setQuestions(Array.isArray(data.questions) ? data.questions : [])
       setQuiz(data.quiz ?? null)
-      toast.success("Quiz generated successfully!")
+      toast.success("Quiz generated! Preview it below.")
     } catch (e) {
       console.error(e)
       toast.error("Failed to generate quiz")
@@ -65,28 +72,76 @@ export function QuizGeneratorSection() {
 
   const handlePdfUpload = async () => {
     if (!files.length) return
+    
+    // Reset state for new quiz generation
     setQuestions([])
     setQuiz(null)
+    setSavedQuizId(null)
     setLoading(true)
 
     try {
       const formData = new FormData()
       files.forEach((file) => formData.append("files", file))
       formData.append("settings", JSON.stringify(quizSettings))
+      
       const res = await fetch("/api/generate-quiz", { method: "POST", body: formData })
       const data = await res.json()
+      
       if (data.error) {
         toast.error(data.error)
         return
       }
+      
       setQuestions(Array.isArray(data.questions) ? data.questions : [])
       setQuiz(data.quiz ?? null)
-      toast.success("Quiz generated successfully!")
+      toast.success("Quiz generated! Preview it below.")
     } catch (e) {
       console.error(e)
       toast.error("Failed to generate quiz")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSaveQuiz = async (): Promise<string | null> => {
+    if (!quiz || !questions.length) {
+      toast.error("No quiz to save")
+      return null
+    }
+
+    if (savedQuizId) {
+      return savedQuizId
+    }
+
+    setSaving(true)
+    try {
+      const id = await saveQuiz(quiz, questions)
+      if (!id) {
+        throw new Error("Failed to get quiz ID")
+      }
+      setSavedQuizId(id)
+      return id
+    } catch (error) {
+      console.error("Save quiz error:", error)
+      toast.error("Failed to save quiz")
+      return null
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleStartQuiz = async () => {
+    const id = await handleSaveQuiz()
+    if (id) {
+      toast.success("Quiz started!")
+      router.push(`/quiz/${id}`)
+    }
+  }
+
+  const handleSaveForLater = async () => {
+    const id = await handleSaveQuiz()
+    if (id) {
+      toast.success("Quiz saved! Find it in your dashboard.")
     }
   }
 
@@ -267,40 +322,36 @@ export function QuizGeneratorSection() {
                       <Button
                         size="lg"
                         className="w-full"
-                        disabled={loading}
-                        onClick={async () => {
-                          setLoading(true)
-                          try {
-                            const id = await saveQuiz(quiz, questions)
-                            if (!id) throw new Error("No quiz ID")
-                            toast.success("Quiz started!")
-                            router.push(`/quiz/${id}`)
-                          } catch {
-                            toast.error("Could not start quiz")
-                          } finally {
-                            setLoading(false)
-                          }
-                        }}
+                        disabled={saving}
+                        onClick={handleStartQuiz}
                       >
-                        {loading ? "Starting..." : "Start Quiz Now"}
+                        {saving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : savedQuizId ? (
+                          "Start Quiz"
+                        ) : (
+                          "Save & Start Quiz"
+                        )}
                       </Button>
                       <Button
                         variant="outline"
                         className="w-full bg-transparent"
-                        disabled={loading}
-                        onClick={async () => {
-                          setLoading(true)
-                          try {
-                            await saveQuiz(quiz, questions)
-                            toast.success("Saved!")
-                          } catch {
-                            toast.error("Failed to save")
-                          } finally {
-                            setLoading(false)
-                          }
-                        }}
+                        disabled={saving}
+                        onClick={handleSaveForLater}
                       >
-                        Save for Later
+                        {saving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : savedQuizId ? (
+                          "Saved ✓"
+                        ) : (
+                          "Save for Later"
+                        )}
                       </Button>
                     </>
                   )}

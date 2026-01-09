@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI, Type, createPartFromUri } from "@google/genai";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { 
-  QuizInsert, 
-  QuestionInsert, 
   DifficultyLevel, 
   QuestionType 
 } from "@/lib/supabase/client";
@@ -210,6 +208,7 @@ export async function POST(req: Request) {
     const contentType = req.headers.get("content-type") || "";
     let geminiResponse: GeminiQuizResponse;
 
+    // Handle file upload or text input
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
       const files = formData.getAll("files") as File[];
@@ -246,65 +245,28 @@ export async function POST(req: Request) {
       geminiResponse = await generateQuiz({ text, ...settings });
     }
 
-    // Save to database with proper types
-    const quizInsert: QuizInsert = {
-      title: geminiResponse.quiz.title,
-      description: geminiResponse.quiz.description,
-      subject: geminiResponse.quiz.subject,
-      tags: geminiResponse.quiz.tags,
-      difficulty: geminiResponse.quiz.difficulty,
-      user_id: user.id,
-      status: "not_started",
-      visibility: "private",
-    };
-
-    const { data: quiz, error: quizError } = await supabase
-      .from("quizzes")
-      .insert(quizInsert)
-      .select()
-      .single();
-
-    if (quizError || !quiz) {
-      throw new Error("Failed to save quiz");
-    }
-
     // Calculate total marks
     const totalMarks = geminiResponse.questions.reduce(
       (sum, q) => sum + (q.marks || 1), 
       0
     );
 
-    // Update total marks
-    await supabase
-      .from("quizzes")
-      .update({ total_marks: totalMarks })
-      .eq("id", quiz.id);
-
-    // Save questions with proper types
-    const questionsInsert: QuestionInsert[] = geminiResponse.questions.map((q) => ({
-      quiz_id: quiz.id,
-      type: q.type,
-      question_text: q.question_text,
-      options: q.options || null,
-      answer: q.answer,
-      explanation: q.explanation,
-      marks: q.marks || 1,
-      visibility: "private",
-    }));
-
-    const { data: questions, error: questionsError } = await supabase
-      .from("questions")
-      .insert(questionsInsert)
-      .select();
-
-    if (questionsError) {
-      throw new Error("Failed to save questions");
-    }
-
+    // Return quiz data without saving to database
+    // The client will decide when to save (preview first, then save on action)
     return NextResponse.json({ 
-      quiz, 
-      questions,
-      message: "Quiz created successfully" 
+      quiz: {
+        ...geminiResponse.quiz,
+        total_marks: totalMarks,
+        user_id: user.id,
+        status: "not_started",
+        visibility: "private",
+      },
+      questions: geminiResponse.questions.map(q => ({
+        ...q,
+        marks: q.marks || 1,
+        visibility: "private",
+      })),
+      message: "Quiz generated successfully" 
     });
     
   } catch (err) {
