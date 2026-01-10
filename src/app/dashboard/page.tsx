@@ -6,17 +6,15 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { deleteQuiz } from "@/lib/supabase/deleteQuiz"
 import { fetchDashboardStats } from "@/lib/supabase/fetchDashboardStats"
+import { fetchPerformanceData, fetchQuestionTypeData, fetchWeeklyActivityData } from "@/lib/supabase/fetchChartData"
+import type { PerformanceData, QuestionTypeData, WeeklyActivityData } from "@/lib/supabase/fetchChartData"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Loader2, Plus } from "lucide-react"
 import Link from "next/link"
 import { StatsCards, StreakCard, StudyTimeCard } from "@/components/dashboard/StatsCards"
-import {
-  PerformanceChartPlaceholder,
-  QuestionTypeChartPlaceholder,
-  WeeklyActivityPlaceholder,
-} from "@/components/dashboard/ChartPlaceholders"
+import { PerformanceChart, QuestionTypeChart, WeeklyActivityChart } from "@/components/dashboard/Charts"
 import { RecentActivity } from "@/components/dashboard/RecentActivity"
 import { createClient, type Quiz } from "@/lib/supabase/client"
 import { DataTable, getColumns } from "@/components/DataTable"
@@ -42,6 +40,15 @@ export default function DashboardPage() {
     currentStreak: 0,
     totalStudyTimeMinutes: 0,
   })
+  const [chartData, setChartData] = useState<{
+    performance: PerformanceData[]
+    questionTypes: QuestionTypeData[]
+    weeklyActivity: WeeklyActivityData[]
+  }>({
+    performance: [],
+    questionTypes: [],
+    weeklyActivity: [],
+  })
   const { user, loading: authLoading } = useAuth()
   const hasFetched = useRef(false)
 
@@ -55,6 +62,7 @@ export default function DashboardPage() {
 
     hasFetched.current = true
     loadDashboardData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, router])
 
   const loadDashboardData = async () => {
@@ -63,6 +71,19 @@ export default function DashboardPage() {
       // Fetch stats
       const dashboardStats = await fetchDashboardStats()
       setStats(dashboardStats)
+
+      // Fetch chart data
+      const [performance, questionTypes, weeklyActivity] = await Promise.all([
+        fetchPerformanceData(),
+        fetchQuestionTypeData(),
+        fetchWeeklyActivityData(),
+      ])
+
+      setChartData({
+        performance,
+        questionTypes,
+        weeklyActivity,
+      })
 
       // Fetch quizzes for the table
       const { data, error } = await supabase
@@ -137,7 +158,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <PerformanceChartPlaceholder />
+            <PerformanceChart data={chartData.performance} />
           </div>
           <div className="space-y-6">
             <StreakCard currentStreak={stats.currentStreak} />
@@ -146,8 +167,8 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <QuestionTypeChartPlaceholder />
-          <WeeklyActivityPlaceholder />
+          <QuestionTypeChart data={chartData.questionTypes} />
+          <WeeklyActivityChart data={chartData.weeklyActivity} />
           <RecentActivity quizzes={quizzes} />
         </div>
 
