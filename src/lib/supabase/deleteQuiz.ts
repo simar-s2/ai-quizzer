@@ -29,12 +29,34 @@ export async function deleteQuiz(quizId: string): Promise<{ success: boolean; er
     return { success: false, error: "Unauthorized: You don't own this quiz" };
   }
 
-  // Delete the quiz (questions and answers will cascade delete if foreign keys are set up properly)
+  // Delete attempts for this quiz (this should cascade to attempt_answers)
+  const { error: attemptsError } = await supabase
+    .from("attempts")
+    .delete()
+    .eq("quiz_id", quizId);
+
+  if (attemptsError) {
+    console.error("Error deleting attempts:", attemptsError);
+    return { success: false, error: `Failed to delete attempts: ${attemptsError.message}` };
+  }
+
+  // Delete questions for this quiz
+  const { error: questionsError } = await supabase
+    .from("questions")
+    .delete()
+    .eq("quiz_id", quizId);
+
+  if (questionsError) {
+    console.error("Error deleting questions:", questionsError);
+    return { success: false, error: `Failed to delete questions: ${questionsError.message}` };
+  }
+
+  // Finally delete the quiz
   const { error: deleteError } = await supabase
     .from("quizzes")
     .delete()
     .eq("id", quizId)
-    .eq("user_id", user.id); // Extra safety check
+    .eq("user_id", user.id);
 
   if (deleteError) {
     console.error("Error deleting quiz:", deleteError);

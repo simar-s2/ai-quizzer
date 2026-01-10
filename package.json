@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "types:generate": "supabase gen types typescript --project-id $(grep NEXT_PUBLIC_SUPABASE_URL .env.local | cut -d '/' -f 3 | cut -d '.' -f 1) > src/types/database.types.ts"
   },
   "dependencies": {
     "@google/genai": "^1.10.0",

@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
-import { createClient, type Quiz } from "@/lib/supabase/client"
-import { DataTable, getColumns } from "@/components/DataTable"
+import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/components/AuthProvider"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { deleteQuiz } from "@/lib/supabase/deleteQuiz"
+import { fetchDashboardStats } from "@/lib/supabase/fetchDashboardStats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -19,6 +18,8 @@ import {
   WeeklyActivityPlaceholder,
 } from "@/components/dashboard/ChartPlaceholders"
 import { RecentActivity } from "@/components/dashboard/RecentActivity"
+import { createClient, type Quiz } from "@/lib/supabase/client"
+import { DataTable, getColumns } from "@/components/DataTable"
 
 interface QuizWithAttempts extends Quiz {
   attempts?: Array<{ id: string; score: number; completed_at: string | null }>
@@ -26,63 +27,80 @@ interface QuizWithAttempts extends Quiz {
   attempts_count?: number
 }
 
-const quizCache: QuizWithAttempts[] = []
-
 export default function DashboardPage() {
   const router = useRouter()
   const supabase = useRef(createClient()).current
-  const [quizzes, setQuizzes] = useState<QuizWithAttempts[]>(quizCache)
-  const [loading, setLoading] = useState(false)
+  const [quizzes, setQuizzes] = useState<QuizWithAttempts[]>([])
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    totalQuizzes: 0,
+    completedQuizzes: 0,
+    inProgressQuizzes: 0,
+    totalAttempts: 0,
+    averageScore: 0,
+    bestScore: 0,
+    currentStreak: 0,
+    totalStudyTimeMinutes: 0,
+  })
   const { user, loading: authLoading } = useAuth()
   const hasFetched = useRef(false)
 
-  const fetchQuizzes = useCallback(async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from("quizzes")
-      .select(`*, attempts (id, score, completed_at)`)
-      .order("created_at", { ascending: false })
-    if (!error && data) {
-      const processedData = data.map((quiz) => {
-        const attempts = quiz.attempts || []
-        const bestScore = attempts.length > 0 ? Math.max(...attempts.map((a) => a.score)) : null
-        return { ...quiz, best_score: bestScore, attempts_count: attempts.length }
-      })
-      quizCache.splice(0, quizCache.length, ...processedData)
-      setQuizzes(processedData)
-    } else if (error) toast.error("Failed to load quizzes")
-    setLoading(false)
-  }, [supabase])
-
   useEffect(() => {
-    if (hasFetched.current) return
-    if (!authLoading) {
-      if (!user) {
-        router.push("/")
-        return
-      }
-      if (quizCache.length === 0) {
-        hasFetched.current = true
-        fetchQuizzes()
-      }
+    if (hasFetched.current || authLoading) return
+    
+    if (!user) {
+      router.push("/")
+      return
     }
-  }, [authLoading, user, fetchQuizzes, router])
+
+    hasFetched.current = true
+    loadDashboardData()
+  }, [authLoading, user, router])
+
+  const loadDashboardData = async () => {
+    setLoading(true)
+    try {
+      // Fetch stats
+      const dashboardStats = await fetchDashboardStats()
+      setStats(dashboardStats)
+
+      // Fetch quizzes for the table
+      const { data, error } = await supabase
+        .from("quizzes")
+        .select(`*, attempts (id, score, completed_at)`)
+        .order("created_at", { ascending: false })
+
+      if (!error && data) {
+        const processedData = data.map((quiz) => {
+          const attempts = quiz.attempts || []
+          const bestScore = attempts.length > 0 ? Math.max(...attempts.map((a) => a.score)) : null
+          return { ...quiz, best_score: bestScore, attempts_count: attempts.length }
+        })
+        setQuizzes(processedData)
+      } else if (error) {
+        toast.error("Failed to load quizzes")
+      }
+    } catch (error) {
+      console.error("Error loading dashboard:", error)
+      toast.error("Failed to load dashboard data")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleDeleteQuiz = async (quizId: string) => {
     if (!confirm("Delete this quiz?")) return
-    setLoading(true)
     try {
       const result = await deleteQuiz(quizId)
       if (result.success) {
         toast.success("Quiz deleted")
-        const updated = quizzes.filter((q) => q.id !== quizId)
-        setQuizzes(updated)
-        quizCache.splice(0, quizCache.length, ...updated)
-      } else toast.error("Failed to delete")
+        // Reload dashboard data to update stats
+        await loadDashboardData()
+      } else {
+        toast.error("Failed to delete")
+      }
     } catch {
       toast.error("Failed to delete")
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -93,13 +111,6 @@ export default function DashboardPage() {
       </div>
     )
   }
-
-  const totalQuizzes = quizzes.length
-  const completedQuizzes = quizzes.filter((q) => q.status === "completed").length
-  const totalAttempts = quizzes.reduce((sum, q) => sum + (q.attempts_count || 0), 0)
-  const averageScore =
-    quizzes.filter((q) => q.best_score !== null).reduce((sum, q) => sum + (q.best_score || 0), 0) /
-    (quizzes.filter((q) => q.best_score !== null).length || 1)
 
   return (
     <div className="min-h-screen">
@@ -118,10 +129,10 @@ export default function DashboardPage() {
         </div>
 
         <StatsCards
-          totalQuizzes={totalQuizzes}
-          completedQuizzes={completedQuizzes}
-          totalAttempts={totalAttempts}
-          averageScore={averageScore}
+          totalQuizzes={stats.totalQuizzes}
+          completedQuizzes={stats.completedQuizzes}
+          totalAttempts={stats.totalAttempts}
+          averageScore={stats.averageScore}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -129,8 +140,8 @@ export default function DashboardPage() {
             <PerformanceChartPlaceholder />
           </div>
           <div className="space-y-6">
-            <StreakCard />
-            <StudyTimeCard />
+            <StreakCard currentStreak={stats.currentStreak} />
+            <StudyTimeCard studyTimeMinutes={stats.totalStudyTimeMinutes} />
           </div>
         </div>
 

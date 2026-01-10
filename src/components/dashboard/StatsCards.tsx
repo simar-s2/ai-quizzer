@@ -10,12 +10,30 @@ interface StatsCardsProps {
 
 export function StatsCards({ totalQuizzes, completedQuizzes, totalAttempts, averageScore }: StatsCardsProps) {
   const stats = [
-    { label: "Total Quizzes", value: totalQuizzes, icon: BookOpen, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Completed", value: completedQuizzes, icon: Trophy, color: "text-green-500", bg: "bg-green-500/10" },
-    { label: "Total Attempts", value: totalAttempts, icon: Target, color: "text-purple-500", bg: "bg-purple-500/10" },
+    { 
+      label: "Total Quizzes", 
+      value: totalQuizzes, 
+      icon: BookOpen, 
+      color: "text-blue-500", 
+      bg: "bg-blue-500/10" 
+    },
+    { 
+      label: "Completed", 
+      value: completedQuizzes, 
+      icon: Trophy, 
+      color: "text-green-500", 
+      bg: "bg-green-500/10" 
+    },
+    { 
+      label: "Total Attempts", 
+      value: totalAttempts, 
+      icon: Target, 
+      color: "text-purple-500", 
+      bg: "bg-purple-500/10" 
+    },
     {
       label: "Avg. Score",
-      value: isNaN(averageScore) ? "—" : `${averageScore.toFixed(0)}%`,
+      value: isNaN(averageScore) || averageScore === 0 ? "—" : `${Math.round(averageScore)}%`,
       icon: TrendingUp,
       color: "text-amber-500",
       bg: "bg-amber-500/10",
@@ -41,7 +59,11 @@ export function StatsCards({ totalQuizzes, completedQuizzes, totalAttempts, aver
   )
 }
 
-export function StreakCard() {
+interface StreakCardProps {
+  currentStreak: number
+}
+
+export function StreakCard({ currentStreak }: StreakCardProps) {
   return (
     <Card className="bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20">
       <CardContent className="pt-6">
@@ -52,8 +74,8 @@ export function StreakCard() {
           <div>
             <p className="text-sm text-muted-foreground mb-1">Current Streak</p>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold">7</span>
-              <span className="text-muted-foreground">days</span>
+              <span className="text-4xl font-bold">{currentStreak}</span>
+              <span className="text-muted-foreground">{currentStreak === 1 ? "day" : "days"}</span>
             </div>
           </div>
         </div>
@@ -62,7 +84,16 @@ export function StreakCard() {
   )
 }
 
-export function StudyTimeCard() {
+interface StudyTimeCardProps {
+  studyTimeMinutes: number
+}
+
+export function StudyTimeCard({ studyTimeMinutes }: StudyTimeCardProps) {
+  // Convert minutes to hours for display
+  const hours = studyTimeMinutes / 60
+  const displayValue = hours >= 1 ? hours.toFixed(1) : studyTimeMinutes
+  const displayUnit = hours >= 1 ? "hours" : "minutes"
+
   return (
     <Card className="bg-card/50 border-border/50">
       <CardContent className="pt-6">
@@ -71,10 +102,10 @@ export function StudyTimeCard() {
             <Clock className="h-7 w-7 text-green-500" />
           </div>
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Study Time This Week</p>
+            <p className="text-sm text-muted-foreground mb-1">Total Study Time</p>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold">4.5</span>
-              <span className="text-muted-foreground">hours</span>
+              <span className="text-4xl font-bold">{displayValue}</span>
+              <span className="text-muted-foreground">{displayUnit}</span>
             </div>
           </div>
         </div>
