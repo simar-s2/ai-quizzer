@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, LogOut, Home, LayoutDashboard, Zap, Sun, Moon, Settings, BarChart3, HelpCircle } from "lucide-react"
+import { Menu, LogOut, Home, LayoutDashboard, Zap, Sun, Moon, Settings, HelpCircle } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/components/AuthProvider"
 import { useTheme } from "next-themes"
@@ -48,18 +48,11 @@ export default function Navbar() {
               </Button>
             </Link>
             {session && (
-              <>
-                <Link href="/dashboard">
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                    Dashboard
-                  </Button>
-                </Link>
-                <Link href="/statistics">
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                    Statistics
-                  </Button>
-                </Link>
-              </>
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  Dashboard
+                </Button>
+              </Link>
             )}
             <Link href="/help">
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
@@ -124,12 +117,6 @@ export default function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/statistics" className="cursor-pointer">
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      Statistics
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
                     <Link href="/settings" className="cursor-pointer">
                       <Settings className="h-4 w-4 mr-2" />
                       Settings
@@ -174,13 +161,6 @@ export default function Navbar() {
                     >
                       <LayoutDashboard className="h-5 w-5 text-muted-foreground" />
                       <span className="font-medium">Dashboard</span>
-                    </Link>
-                    <Link
-                      href="/statistics"
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors"
-                    >
-                      <BarChart3 className="h-5 w-5 text-muted-foreground" />
-                      <span className="font-medium">Statistics</span>
                     </Link>
                     <Link
                       href="/settings"
