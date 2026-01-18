@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getGenAIService, type AnswerToMark } from "@/lib/services";
+import { getQuizRepository } from "@/lib/repositories";
 
 export async function POST(req: Request) {
   try {
@@ -25,22 +26,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: quiz, error: quizError } = await supabase
-      .from("quizzes")
-      .select("*")
-      .eq("id", quiz_id)
-      .single();
+    const repository = getQuizRepository();
 
-    if (quizError || !quiz) {
+    const quiz = await repository.getQuizById(quiz_id);
+    if (!quiz) {
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
     }
 
-    const { data: questions, error: questionsError } = await supabase
-      .from("questions")
-      .select("*")
-      .eq("quiz_id", quiz_id);
-
-    if (questionsError || !questions) {
+    const questions = await repository.getQuestionsByQuizId(quiz_id);
+    if (questions.length === 0) {
       return NextResponse.json({ error: "Questions not found" }, { status: 404 });
     }
 
@@ -66,30 +60,23 @@ export async function POST(req: Request) {
     const genAIService = getGenAIService();
     const markingResult = await genAIService.markAnswers(answersToMark);
 
-    const { data: attempt, error: attemptError } = await supabase
-      .from("attempts")
-      .insert({
-        user_id: user.id,
-        quiz_id: quiz_id,
-        score: markingResult.percentage,
-        total_marks: markingResult.total_marks_possible,
-        marks_obtained: markingResult.total_marks_awarded,
-        feedback: { overall: markingResult.overall_feedback },
-        time_taken: time_taken || null,
-      })
-      .select()
-      .single();
-
-    if (attemptError || !attempt) {
-      return NextResponse.json({ error: "Failed to save attempt" }, { status: 500 });
-    }
+    const attempt = await repository.saveAttempt({
+      user_id: user.id,
+      quiz_id: quiz_id,
+      score: markingResult.percentage,
+      total_marks: markingResult.total_marks_possible,
+      marks_obtained: markingResult.total_marks_awarded,
+      feedback: { overall: markingResult.overall_feedback },
+      time_taken: time_taken || null,
+    });
 
     const attemptAnswers = markingResult.question_results.map((result) => ({
       attempt_id: attempt.id,
       question_id: result.question_id,
       user_answer:
-        answers.find((a: { question_id: string; user_answer?: string }) => a.question_id === result.question_id)
-          ?.user_answer || null,
+        answers.find(
+          (a: { question_id: string; user_answer?: string }) => a.question_id === result.question_id
+        )?.user_answer || null,
       is_correct: result.is_correct,
       correctness_status: result.correctness_status,
       marks_awarded: result.marks_awarded,
@@ -97,13 +84,8 @@ export async function POST(req: Request) {
       ai_feedback: result.feedback,
     }));
 
-    await supabase.from("attempt_answers").insert(attemptAnswers);
-
-    await supabase
-      .from("quizzes")
-      .update({ status: "completed" })
-      .eq("id", quiz_id)
-      .eq("user_id", user.id);
+    await repository.saveAttemptAnswers(attemptAnswers);
+    await repository.updateQuizStatus(quiz_id, user.id, "completed");
 
     return NextResponse.json({
       success: true,
