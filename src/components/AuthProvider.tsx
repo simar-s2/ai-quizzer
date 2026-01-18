@@ -1,12 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Session, User, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 
 const MOCK_USER_ID = "mock-user-00000000-0000-0000-0000-000000000001";
 const MOCK_USER_EMAIL = "testuser@mock.local";
+const MOCK_AUTH_STORAGE_KEY = "mock-auth-logged-in";
 
 function isMockModeEnabled(): boolean {
   return process.env.NEXT_PUBLIC_USE_MOCKS === "true";
@@ -49,6 +50,8 @@ type AuthContextType = {
   session: Session | null;
   loading: boolean;
   isMockMode: boolean;
+  signIn: () => void;
+  signOut: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -83,16 +86,45 @@ function RealAuthProvider({ children }: { children: React.ReactNode }) {
 
   const user = session?.user ?? null;
 
+  const signIn = useCallback(() => {
+    // Real auth uses supabase.auth methods directly
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+  }, [supabase]);
+
   return (
-    <AuthContext.Provider value={{ user, supabase, session, loading, isMockMode: false }}>
+    <AuthContext.Provider value={{ user, supabase, session, loading, isMockMode: false, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 function MockAuthProvider({ children }: { children: React.ReactNode }) {
-  const mockSession = getMockSession();
-  const mockUser = getMockUser();
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem(MOCK_AUTH_STORAGE_KEY);
+    setIsLoggedIn(stored !== "false");
+  }, []);
+
+  const signIn = useCallback(() => {
+    sessionStorage.setItem(MOCK_AUTH_STORAGE_KEY, "true");
+    setIsLoggedIn(true);
+  }, []);
+
+  const signOut = useCallback(() => {
+    sessionStorage.setItem(MOCK_AUTH_STORAGE_KEY, "false");
+    setIsLoggedIn(false);
+  }, []);
+
+  if (isLoggedIn === null) {
+    return null;
+  }
+
+  const mockSession = isLoggedIn ? getMockSession() : null;
+  const mockUser = isLoggedIn ? getMockUser() : null;
 
   return (
     <AuthContext.Provider
@@ -102,6 +134,8 @@ function MockAuthProvider({ children }: { children: React.ReactNode }) {
         session: mockSession,
         loading: false,
         isMockMode: true,
+        signIn,
+        signOut,
       }}
     >
       {children}

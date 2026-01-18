@@ -21,7 +21,7 @@ export default function LoginForm({
   ...props
 }: React.ComponentPropsWithRef<"div"> & { onToggleForm: () => void }) {
   const router = useRouter();
-  const { supabase, isMockMode } = useAuth();
+  const { supabase, isMockMode, signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,12 +29,12 @@ export default function LoginForm({
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) {
-      if (isMockMode) {
-        router.push("/");
-      }
+    if (isMockMode) {
+      signIn();
+      router.push("/");
       return;
     }
+    if (!supabase) return;
     setLoading(true);
     setError("");
     const { error } = await supabase.auth.signInWithPassword({
@@ -50,12 +50,12 @@ export default function LoginForm({
   };
 
   const handleGoogleLogin = async () => {
-    if (!supabase) {
-      if (isMockMode) {
-        router.push("/");
-      }
+    if (isMockMode) {
+      signIn();
+      router.push("/");
       return;
     }
+    if (!supabase) return;
     setLoading(true);
     setError("");
     const { error } = await supabase.auth.signInWithOAuth({
