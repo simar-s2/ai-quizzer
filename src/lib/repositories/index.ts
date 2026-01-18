@@ -1,7 +1,10 @@
 import type { IQuizRepository } from "./types";
 import { SupabaseQuizRepository } from "./supabase";
+import { MockQuizRepository } from "./mock";
+import { isMockMode } from "@/lib/services";
 
 export type { IQuizRepository } from "./types";
+export { clearMockDataStore, getMockDataStore } from "./mock";
 
 let quizRepositoryInstance: IQuizRepository | null = null;
 
@@ -10,7 +13,11 @@ export function getQuizRepository(): IQuizRepository {
     return quizRepositoryInstance;
   }
 
-  quizRepositoryInstance = new SupabaseQuizRepository();
+  if (isMockMode()) {
+    quizRepositoryInstance = new MockQuizRepository();
+  } else {
+    quizRepositoryInstance = new SupabaseQuizRepository();
+  }
 
   return quizRepositoryInstance;
 }
