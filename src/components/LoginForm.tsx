@@ -21,7 +21,7 @@ export default function LoginForm({
   ...props
 }: React.ComponentPropsWithRef<"div"> & { onToggleForm: () => void }) {
   const router = useRouter();
-  const { supabase } = useAuth();
+  const { supabase, isMockMode, signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,6 +29,12 @@ export default function LoginForm({
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isMockMode) {
+      signIn();
+      router.push("/");
+      return;
+    }
+    if (!supabase) return;
     setLoading(true);
     setError("");
     const { error } = await supabase.auth.signInWithPassword({
@@ -44,15 +50,21 @@ export default function LoginForm({
   };
 
   const handleGoogleLogin = async () => {
+    if (isMockMode) {
+      signIn();
+      router.push("/");
+      return;
+    }
+    if (!supabase) return;
     setLoading(true);
     setError("");
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
+          access_type: "offline",
+          prompt: "consent",
         },
       },
     });
@@ -60,7 +72,6 @@ export default function LoginForm({
       setError(error.message);
       setLoading(false);
     }
-    // Don't set loading to false here as we're redirecting
   };
 
   return (
@@ -68,17 +79,15 @@ export default function LoginForm({
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>
-            Login with your Apple or Google account
-          </CardDescription>
+          <CardDescription>Login with your Apple or Google account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin}>
             <div className="grid gap-6">
               <div className="flex flex-col gap-4">
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
+                <Button
+                  variant="outline"
+                  className="w-full"
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={loading}
@@ -93,9 +102,7 @@ export default function LoginForm({
                 </Button>
               </div>
               <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                <span className="bg-card text-muted-foreground relative z-10 px-2">
-                  Or continue with
-                </span>
+                <span className="bg-card text-muted-foreground relative z-10 px-2">Or continue with</span>
               </div>
               <div className="grid gap-6">
                 <div className="grid gap-3">
@@ -112,10 +119,7 @@ export default function LoginForm({
                 <div className="grid gap-3">
                   <div className="flex items-center">
                     <Label htmlFor="password">Password</Label>
-                    <a
-                      href="#"
-                      className="ml-auto text-sm underline-offset-4 hover:underline"
-                    >
+                    <a href="#" className="ml-auto text-sm underline-offset-4 hover:underline">
                       Forgot your password?
                     </a>
                   </div>
@@ -134,11 +138,7 @@ export default function LoginForm({
               </div>
               <div className="text-center text-sm">
                 Don&apos;t have an account?{" "}
-                <a
-                  href="#"
-                  onClick={onToggleForm}
-                  className="underline underline-offset-4"
-                >
+                <a href="#" onClick={onToggleForm} className="underline underline-offset-4">
                   Sign up
                 </a>
               </div>
@@ -147,8 +147,8 @@ export default function LoginForm({
         </CardContent>
       </Card>
       <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+        By clicking continue, you agree to our <a href="#">Terms of Service</a> and{" "}
+        <a href="#">Privacy Policy</a>.
       </div>
     </div>
   );
