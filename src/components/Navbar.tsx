@@ -17,13 +17,11 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export default function Navbar() {
-  const { session, supabase, user, loading } = useAuth()
+  const { session, user, loading, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
 
   const handleLogout = async () => {
-    if (!supabase) return
-    await supabase.auth.signOut()
-    location.reload()
+    await signOut()
   }
 
   if (loading) return null
