@@ -9,9 +9,6 @@ const MOCK_USER_ID = "mock-user-00000000-0000-0000-0000-000000000001";
 const MOCK_USER_EMAIL = "testuser@mock.local";
 
 function isMockModeEnabled(): boolean {
-  if (typeof window === "undefined") {
-    return process.env.NEXT_PUBLIC_USE_MOCKS === "true";
-  }
   return process.env.NEXT_PUBLIC_USE_MOCKS === "true";
 }
 
@@ -47,7 +44,7 @@ function getMockSession(): Session {
 }
 
 type AuthContextType = {
-  supabase: SupabaseClient<Database>;
+  supabase: SupabaseClient<Database> | null;
   user: User | null;
   session: Session | null;
   loading: boolean;
@@ -94,7 +91,6 @@ function RealAuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 function MockAuthProvider({ children }: { children: React.ReactNode }) {
-  const [supabase] = useState(() => createClient());
   const mockSession = getMockSession();
   const mockUser = getMockUser();
 
@@ -102,7 +98,7 @@ function MockAuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user: mockUser,
-        supabase,
+        supabase: null,
         session: mockSession,
         loading: false,
         isMockMode: true,
