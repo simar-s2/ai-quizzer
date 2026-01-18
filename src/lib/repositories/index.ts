@@ -1,7 +1,7 @@
 import type { IQuizRepository } from "./types";
 import { SupabaseQuizRepository } from "./supabase";
 import { MockQuizRepository } from "./mock";
-import { isMockMode } from "@/lib/services";
+import { isMockMode } from "@/lib/config";
 
 export type { IQuizRepository } from "./types";
 export { clearMockDataStore, getMockDataStore } from "./mock";

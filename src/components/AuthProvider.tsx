@@ -2,20 +2,62 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Session, User } from "@supabase/supabase-js";
+import type { Session, User, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
-const supabase = createClient();
+const MOCK_USER_ID = "mock-user-00000000-0000-0000-0000-000000000001";
+const MOCK_USER_EMAIL = "testuser@mock.local";
+
+function isMockModeEnabled(): boolean {
+  if (typeof window === "undefined") {
+    return process.env.NEXT_PUBLIC_USE_MOCKS === "true";
+  }
+  return process.env.NEXT_PUBLIC_USE_MOCKS === "true";
+}
+
+function getMockUser(): User {
+  return {
+    id: MOCK_USER_ID,
+    email: MOCK_USER_EMAIL,
+    aud: "authenticated",
+    role: "authenticated",
+    email_confirmed_at: new Date().toISOString(),
+    phone: "",
+    confirmed_at: new Date().toISOString(),
+    last_sign_in_at: new Date().toISOString(),
+    app_metadata: { provider: "mock", providers: ["mock"] },
+    user_metadata: { full_name: "Test User", avatar_url: null },
+    identities: [],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    is_anonymous: false,
+  };
+}
+
+function getMockSession(): Session {
+  const user = getMockUser();
+  return {
+    access_token: "mock-access-token",
+    token_type: "bearer",
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    refresh_token: "mock-refresh-token",
+    user,
+  };
+}
 
 type AuthContextType = {
-  supabase: ReturnType<typeof createClient>;
+  supabase: SupabaseClient<Database>;
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isMockMode: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export default function AuthProvider({ children }: { children: React.ReactNode }) {
+function RealAuthProvider({ children }: { children: React.ReactNode }) {
+  const [supabase] = useState(() => createClient());
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,15 +82,55 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   const user = session?.user ?? null;
 
   return (
-    <AuthContext.Provider value={{ user, supabase, session, loading }}>
+    <AuthContext.Provider value={{ user, supabase, session, loading, isMockMode: false }}>
       {children}
     </AuthContext.Provider>
   );
+}
+
+function MockAuthProvider({ children }: { children: React.ReactNode }) {
+  const [supabase] = useState(() => createClient());
+  const mockSession = getMockSession();
+  const mockUser = getMockUser();
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user: mockUser,
+        supabase,
+        session: mockSession,
+        loading: false,
+        isMockMode: true,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export default function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [isMock, setIsMock] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMock(isMockModeEnabled());
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
+  if (isMock) {
+    return <MockAuthProvider>{children}</MockAuthProvider>;
+  }
+
+  return <RealAuthProvider>{children}</RealAuthProvider>;
 }
 
 export function useAuth() {
