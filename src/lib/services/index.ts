@@ -1,5 +1,6 @@
 import type { IGenAIService } from "./types";
 import { GeminiGenAIService } from "./gemini";
+import { MockGenAIService } from "./mock";
 
 export type { IGenAIService } from "./types";
 export type {
@@ -15,13 +16,21 @@ export type {
 
 let genAIServiceInstance: IGenAIService | null = null;
 
+export function isMockMode(): boolean {
+  return process.env.NEXT_PUBLIC_USE_MOCKS === "true";
+}
+
 export function getGenAIService(): IGenAIService {
   if (genAIServiceInstance) {
     return genAIServiceInstance;
   }
 
-  const apiKey = process.env.GOOGLE_API_KEY || "";
-  genAIServiceInstance = new GeminiGenAIService(apiKey);
+  if (isMockMode()) {
+    genAIServiceInstance = new MockGenAIService();
+  } else {
+    const apiKey = process.env.GOOGLE_API_KEY || "";
+    genAIServiceInstance = new GeminiGenAIService(apiKey);
+  }
 
   return genAIServiceInstance;
 }
