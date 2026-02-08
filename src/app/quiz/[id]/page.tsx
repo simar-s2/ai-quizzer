@@ -1,5 +1,5 @@
-import QuizTakingMenu from "@/components/QuizTakingMenu"
-import { fetchQuizWithQuestions } from "@/lib/supabase/fetchQuiz"
+import QuizTakingMenu from "@/features/quiz/components/QuizTakingMenu"
+import { fetchQuizWithQuestions } from "@/features/quiz/services/fetchQuiz"
 
 export default async function QuizPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

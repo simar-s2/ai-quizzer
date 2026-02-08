@@ -1,5 +1,5 @@
 "use server";
-import { createServerSupabaseClient } from "./server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export interface DashboardStats {
   totalQuizzes: number;

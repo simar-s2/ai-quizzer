@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Badge } from "./ui/badge";
+import { Badge } from "../../../components/ui/badge";
 import clsx from "clsx";
 import { Quiz, Question } from "@/lib/supabase/client";
 

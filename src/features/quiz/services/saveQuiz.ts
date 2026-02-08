@@ -1,5 +1,5 @@
 "use server";
-import { createServerSupabaseClient } from "./server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { QuizInsert, QuestionInsert } from "@/lib/supabase/client";
 
 // Accept partial quiz data from client (may include user_id but will be overridden)

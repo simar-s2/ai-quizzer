@@ -2,11 +2,14 @@
 import React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { exportQuizQuestions, exportQuizMarkscheme } from "../lib/quizExport";
+import {
+  exportQuizQuestions,
+  exportQuizMarkscheme,
+} from "../util/quizExport";
 import { Quiz, Question } from "@/lib/supabase/client";
-import { saveQuiz } from "../lib/supabase/saveQuiz";
+import { saveQuiz } from "@/features/quiz/services/saveQuiz";
 import { toast } from "sonner";
-import { useAuth } from "../components/AuthProvider";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useRouter } from "next/navigation";
 
 export function ExportQuizButtons({

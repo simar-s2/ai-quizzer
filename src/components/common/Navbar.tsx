@@ -1,11 +1,21 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, LogOut, Home, LayoutDashboard, Zap, Sun, Moon, Settings, HelpCircle } from "lucide-react"
-import Link from "next/link"
-import { useAuth } from "@/components/AuthProvider"
-import { useTheme } from "next-themes"
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Menu,
+  LogOut,
+  Home,
+  LayoutDashboard,
+  Zap,
+  Sun,
+  Moon,
+  Settings,
+  HelpCircle,
+} from "lucide-react";
+import Link from "next/link";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { useTheme } from "next-themes";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,26 +23,29 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Navbar() {
-  const { session, user, loading, signOut } = useAuth()
-  const { theme, setTheme } = useTheme()
+  const { session, user, loading, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const handleLogout = async () => {
-    await signOut()
-  }
+    await signOut();
+  };
 
-  if (loading) return null
+  if (loading) return null;
 
-  const userInitials = user?.email?.slice(0, 2).toUpperCase() || "U"
+  const userInitials = user?.email?.slice(0, 2).toUpperCase() || "U";
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2.5 font-bold text-xl tracking-tight group">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 font-bold text-xl tracking-tight group"
+          >
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center group-hover:scale-105 transition-transform">
               <Zap className="h-4 w-4 text-primary-foreground" />
             </div>
@@ -41,19 +54,31 @@ export default function Navbar() {
 
           <nav className="hidden md:flex items-center gap-1">
             <Link href="/">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+              >
                 Home
               </Button>
             </Link>
             {session && (
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   Dashboard
                 </Button>
               </Link>
             )}
             <Link href="/help">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+              >
                 Help
               </Button>
             </Link>
@@ -121,7 +146,10 @@ export default function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-destructive cursor-pointer"
+                  >
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
                   </DropdownMenuItem>
@@ -184,10 +212,18 @@ export default function Navbar() {
                   ) : (
                     <>
                       <div className="px-3 py-3 bg-muted rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-1">Signed in as</p>
-                        <p className="text-sm font-medium truncate">{user?.email}</p>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Signed in as
+                        </p>
+                        <p className="text-sm font-medium truncate">
+                          {user?.email}
+                        </p>
                       </div>
-                      <Button variant="outline" onClick={handleLogout} className="w-full gap-2 bg-transparent">
+                      <Button
+                        variant="outline"
+                        onClick={handleLogout}
+                        className="w-full gap-2 bg-transparent"
+                      >
                         <LogOut className="h-4 w-4" />
                         Logout
                       </Button>
@@ -200,5 +236,5 @@ export default function Navbar() {
         </div>
       </div>
     </header>
-  )
+  );
 }

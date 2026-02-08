@@ -1,7 +1,7 @@
-import Difficulty from "./quizsettingscomponents/Difficulty";
-import NumQuestions from "./quizsettingscomponents/NumQuestions";
-import QuestionTypes from "./quizsettingscomponents/QuestionTypes";
-import Topic from "./quizsettingscomponents/Topic";
+import Difficulty from "./settings-parts/Difficulty";
+import NumQuestions from "./settings-parts/NumQuestions";
+import QuestionTypes from "./settings-parts/QuestionTypes";
+import Topic from "./settings-parts/Topic";
 import { Separator } from "@/components/ui/separator";
 import { QuizSettingsType } from "@/types/quiz-settings";
 

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
-import type { PerformanceData, QuestionTypeData, WeeklyActivityData } from "@/lib/supabase/fetchChartData"
+import type { PerformanceData, QuestionTypeData, WeeklyActivityData } from "@/features/dashboard/services/fetchChartData"
 import { useTheme } from "next-themes"
 
 interface PerformanceChartProps {

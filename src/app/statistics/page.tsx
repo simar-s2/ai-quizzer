@@ -6,10 +6,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LineChart, BarChart3, PieChart, TrendingUp, Target, Award, Clock, Brain, Zap, Calendar } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/components/AuthProvider"
+import { useAuth } from "@/components/providers/AuthProvider"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
-import Spinner from "@/components/Spinner"
+import Spinner from "@/components/common/Spinner"
 
 export default function StatisticsPage() {
   const { user, loading } = useAuth()

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useRouter } from "next/navigation";
 
 export default function LoginForm({

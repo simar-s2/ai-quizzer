@@ -1,155 +1,166 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { FileText, Upload, Zap, Loader2 } from "lucide-react"
-import QuizSettings from "@/components/QuizSettings"
-import QuizPreview from "@/components/QuizPreview"
-import type { Quiz, Question } from "@/lib/supabase/client"
-import type { QuizSettingsType } from "@/types/quiz-settings"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/AuthProvider"
-import { saveQuiz } from "@/lib/supabase/saveQuiz"
-import { exportQuizQuestions, exportQuizMarkscheme } from "@/lib/quizExport"
+import { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { FileText, Upload, Zap, Loader2 } from "lucide-react";
+import QuizSettings from "@/features/quiz/components/QuizSettings";
+import QuizPreview from "@/features/quiz/components/QuizPreview";
+import type { Quiz, Question } from "@/lib/supabase/client";
+import type { QuizSettingsType } from "@/types/quiz-settings";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { saveQuiz } from "@/features/quiz/services/saveQuiz";
+import {
+  exportQuizQuestions,
+  exportQuizMarkscheme,
+} from "@/features/quiz/util/quizExport";
 
 export function QuizGeneratorSection() {
-  const router = useRouter()
-  const { user } = useAuth()
+  const router = useRouter();
+  const { user } = useAuth();
 
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [quiz, setQuiz] = useState<Quiz | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [savedQuizId, setSavedQuizId] = useState<string | null>(null)
-  const [rawText, setRawText] = useState("")
-  const [files, setFiles] = useState<File[]>([])
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedQuizId, setSavedQuizId] = useState<string | null>(null);
+  const [rawText, setRawText] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [quizSettings, setQuizSettings] = useState<QuizSettingsType>({
     difficulty: "medium",
     numQuestions: 5,
     topic: "",
-    type: { selectedTypes: [], distribution: { mcq: 0, fill: 0, truefalse: 0, shortanswer: 0, essay: 0 } },
-  })
+    type: {
+      selectedTypes: [],
+      distribution: { mcq: 0, fill: 0, truefalse: 0, shortanswer: 0, essay: 0 },
+    },
+  });
 
   const handleTextSubmit = async () => {
-    if (!rawText.trim()) return
-    
+    if (!rawText.trim()) return;
+
     // Reset state for new quiz generation
-    setQuestions([])
-    setQuiz(null)
-    setSavedQuizId(null)
-    setLoading(true)
+    setQuestions([]);
+    setQuiz(null);
+    setSavedQuizId(null);
+    setLoading(true);
 
     try {
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: rawText, settings: quizSettings }),
-      })
-      const data = await res.json()
-      
+      });
+      const data = await res.json();
+
       if (data.error) {
-        toast.error(data.error)
-        return
+        toast.error(data.error);
+        return;
       }
-      
-      setQuestions(Array.isArray(data.questions) ? data.questions : [])
-      setQuiz(data.quiz ?? null)
-      toast.success("Quiz generated! Preview it below.")
+
+      setQuestions(Array.isArray(data.questions) ? data.questions : []);
+      setQuiz(data.quiz ?? null);
+      toast.success("Quiz generated! Preview it below.");
     } catch (e) {
-      console.error(e)
-      toast.error("Failed to generate quiz")
+      console.error(e);
+      toast.error("Failed to generate quiz");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handlePdfUpload = async () => {
-    if (!files.length) return
-    
+    if (!files.length) return;
+
     // Reset state for new quiz generation
-    setQuestions([])
-    setQuiz(null)
-    setSavedQuizId(null)
-    setLoading(true)
+    setQuestions([]);
+    setQuiz(null);
+    setSavedQuizId(null);
+    setLoading(true);
 
     try {
-      const formData = new FormData()
-      files.forEach((file) => formData.append("files", file))
-      formData.append("settings", JSON.stringify(quizSettings))
-      
-      const res = await fetch("/api/generate-quiz", { method: "POST", body: formData })
-      const data = await res.json()
-      
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+      formData.append("settings", JSON.stringify(quizSettings));
+
+      const res = await fetch("/api/generate-quiz", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
       if (data.error) {
-        toast.error(data.error)
-        return
+        toast.error(data.error);
+        return;
       }
-      
-      setQuestions(Array.isArray(data.questions) ? data.questions : [])
-      setQuiz(data.quiz ?? null)
-      toast.success("Quiz generated! Preview it below.")
+
+      setQuestions(Array.isArray(data.questions) ? data.questions : []);
+      setQuiz(data.quiz ?? null);
+      toast.success("Quiz generated! Preview it below.");
     } catch (e) {
-      console.error(e)
-      toast.error("Failed to generate quiz")
+      console.error(e);
+      toast.error("Failed to generate quiz");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSaveQuiz = async (): Promise<string | null> => {
     if (!quiz || !questions.length) {
-      toast.error("No quiz to save")
-      return null
+      toast.error("No quiz to save");
+      return null;
     }
 
     if (savedQuizId) {
-      return savedQuizId
+      return savedQuizId;
     }
 
-    setSaving(true)
+    setSaving(true);
     try {
-      const id = await saveQuiz(quiz, questions)
+      const id = await saveQuiz(quiz, questions);
       if (!id) {
-        throw new Error("Failed to get quiz ID")
+        throw new Error("Failed to get quiz ID");
       }
-      setSavedQuizId(id)
-      return id
+      setSavedQuizId(id);
+      return id;
     } catch (error) {
-      console.error("Save quiz error:", error)
-      toast.error("Failed to save quiz")
-      return null
+      console.error("Save quiz error:", error);
+      toast.error("Failed to save quiz");
+      return null;
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleStartQuiz = async () => {
-    const id = await handleSaveQuiz()
+    const id = await handleSaveQuiz();
     if (id) {
-      toast.success("Quiz started!")
-      router.push(`/quiz/${id}`)
+      toast.success("Quiz started!");
+      router.push(`/quiz/${id}`);
     }
-  }
+  };
 
   const handleSaveForLater = async () => {
-    const id = await handleSaveQuiz()
+    const id = await handleSaveQuiz();
     if (id) {
-      toast.success("Quiz saved! Find it in your dashboard.")
+      toast.success("Quiz saved! Find it in your dashboard.");
     }
-  }
+  };
 
   return (
     <section id="quiz-generator" className="py-24 border-t border-border/40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Create your quiz</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+            Create your quiz
+          </h2>
           <p className="text-lg text-muted-foreground">
             Paste your content or upload files to generate a personalized quiz.
           </p>
@@ -213,20 +224,26 @@ export function QuizGeneratorSection() {
                         </div>
                         <div>
                           <p className="font-medium mb-1">Upload PDF files</p>
-                          <p className="text-sm text-muted-foreground">Drag and drop or click to browse</p>
+                          <p className="text-sm text-muted-foreground">
+                            Drag and drop or click to browse
+                          </p>
                         </div>
                         <Input
                           id="files"
                           type="file"
                           multiple
                           accept=".pdf"
-                          onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                          onChange={(e) =>
+                            setFiles(Array.from(e.target.files || []))
+                          }
                           className="max-w-xs"
                         />
                       </div>
                       {!!files.length && (
                         <div className="mt-4 p-3 bg-background rounded-lg border">
-                          <p className="text-sm font-medium mb-2">Selected ({files.length}):</p>
+                          <p className="text-sm font-medium mb-2">
+                            Selected ({files.length}):
+                          </p>
                           <ul className="text-xs text-muted-foreground space-y-1">
                             {files.map((f, idx) => (
                               <li key={idx} className="flex items-center gap-2">
@@ -238,7 +255,12 @@ export function QuizGeneratorSection() {
                         </div>
                       )}
                     </div>
-                    <Button onClick={handlePdfUpload} disabled={loading || !files.length} size="lg" className="w-full">
+                    <Button
+                      onClick={handlePdfUpload}
+                      disabled={loading || !files.length}
+                      size="lg"
+                      className="w-full"
+                    >
                       {loading ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -261,7 +283,10 @@ export function QuizGeneratorSection() {
                 <h3 className="text-xl font-semibold">Quiz Settings</h3>
               </CardHeader>
               <CardContent>
-                <QuizSettings quizSettings={quizSettings} setQuizSettings={setQuizSettings} />
+                <QuizSettings
+                  quizSettings={quizSettings}
+                  setQuizSettings={setQuizSettings}
+                />
               </CardContent>
             </Card>
           </div>
@@ -272,14 +297,20 @@ export function QuizGeneratorSection() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <h3 className="text-xl font-semibold">Preview</h3>
-                    {!!questions.length && <Badge variant="secondary">{questions.length} Questions</Badge>}
+                    {!!questions.length && (
+                      <Badge variant="secondary">
+                        {questions.length} Questions
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
                   {loading ? (
                     <div className="flex flex-col items-center justify-center py-16">
                       <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-                      <p className="text-sm text-muted-foreground">Generating your quiz...</p>
+                      <p className="text-sm text-muted-foreground">
+                        Generating your quiz...
+                      </p>
                     </div>
                   ) : questions.length > 0 && quiz ? (
                     <QuizPreview questions={questions} quiz={quiz} />
@@ -289,7 +320,9 @@ export function QuizGeneratorSection() {
                         <FileText className="h-8 w-8 text-muted-foreground" />
                       </div>
                       <p className="font-medium mb-1">No quiz yet</p>
-                      <p className="text-sm text-muted-foreground">Enter content and generate to preview</p>
+                      <p className="text-sm text-muted-foreground">
+                        Enter content and generate to preview
+                      </p>
                     </div>
                   )}
                 </CardContent>
@@ -301,8 +334,8 @@ export function QuizGeneratorSection() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        exportQuizQuestions(questions, quiz)
-                        toast.success("Exported!")
+                        exportQuizQuestions(questions, quiz);
+                        toast.success("Exported!");
                       }}
                     >
                       Export Quiz
@@ -310,8 +343,8 @@ export function QuizGeneratorSection() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        exportQuizMarkscheme(questions, quiz)
-                        toast.success("Exported!")
+                        exportQuizMarkscheme(questions, quiz);
+                        toast.success("Exported!");
                       }}
                     >
                       Export Answers
@@ -362,5 +395,5 @@ export function QuizGeneratorSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

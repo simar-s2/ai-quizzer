@@ -2,11 +2,11 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useState } from "react";
-import LoginForm from "@/components/LoginForm";
-import SignupForm from "@/components/SignupForm";
-import Spinner from "@/components/Spinner";
+import LoginForm from "@/features/auth/LoginForm";
+import SignupForm from "@/features/auth/SignupForm";
+import Spinner from "@/components/common/Spinner";
 
 export default function AuthPage() {
   const { user, loading } = useAuth(); // assuming loading is returned

@@ -1,16 +1,16 @@
 "use client"
 
-import { useAuth } from "@/components/AuthProvider"
-import { ProfileSection } from "@/components/settings/ProfileSection"
-import { AppearanceSection } from "@/components/settings/AppearanceSection"
-import { NotificationsSection } from "@/components/settings/NotificationsSection"
-import { PreferencesSection } from "@/components/settings/PreferencesSection"
-import { DataPrivacySection } from "@/components/settings/DataPrivacySection"
+import { useAuth } from "@/components/providers/AuthProvider"
+import { ProfileSection } from "@/features/settings/components/ProfileSection"
+import { AppearanceSection } from "@/features/settings/components/AppearanceSection"
+import { NotificationsSection } from "@/features/settings/components/NotificationsSection"
+import { PreferencesSection } from "@/features/settings/components/PreferencesSection"
+import { DataPrivacySection } from "@/features/settings/components/DataPrivacySection"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Palette, Bell, Sliders, Shield } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
-import Spinner from "@/components/Spinner"
+import Spinner from "@/components/common/Spinner"
 
 export default function SettingsPage() {
   const { user, loading } = useAuth()

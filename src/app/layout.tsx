@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Navbar from "../components/Navbar";
-import AuthProvider from "@/components/AuthProvider";
-import MockModeBanner from "@/components/MockModeBanner";
+import Navbar from "../components/common/Navbar";
+import AuthProvider from "@/components/providers/AuthProvider";
+import MockModeBanner from "@/components/common/MockModeBanner";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Toaster } from "sonner";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 export default function MockModeBanner() {
   const { isMockMode } = useAuth();

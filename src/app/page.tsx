@@ -1,11 +1,11 @@
 "use client"
 
-import { useAuth } from "@/components/AuthProvider"
-import { HeroSection } from "@/components/landing/HeroSection"
-import { FeaturesSection } from "@/components/landing/FeaturesSection"
-import { HowItWorksSection } from "@/components/landing/HowItWorksSection"
-import { TestimonialsSection } from "@/components/landing/TestimonialsSection"
-import { QuizGeneratorSection } from "@/components/landing/QuizGeneratorSection"
+import { useAuth } from "@/components/providers/AuthProvider"
+import { HeroSection } from "@/features/landing/components/HeroSection"
+import { FeaturesSection } from "@/features/landing/components/FeaturesSection"
+import { HowItWorksSection } from "@/features/landing/components/HowItWorksSection"
+import { TestimonialsSection } from "@/features/landing/components/TestimonialsSection"
+import { QuizGeneratorSection } from "@/features/quiz/components/QuizGeneratorSection"
 
 export default function Home() {
   const { user, loading } = useAuth()
