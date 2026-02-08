@@ -155,17 +155,7 @@ export function QuizGeneratorSection() {
   };
 
   return (
-    <section id="quiz-generator" className="py-24 border-t border-border/40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Create your quiz
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Paste your content or upload files to generate a personalized quiz.
-          </p>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-7 space-y-6">
             <Card className="bg-card/50 border-border/50">
@@ -394,6 +384,5 @@ export function QuizGeneratorSection() {
           </div>
         </div>
       </div>
-    </section>
   );
 }

@@ -99,12 +99,12 @@ export default function Navbar() {
 
           {!session ? (
             <div className="hidden md:flex items-center gap-2">
-              <Link href="/auth">
+              <Link href="/auth/sign-in">
                 <Button variant="ghost" size="sm">
                   Sign In
                 </Button>
               </Link>
-              <Link href="/auth">
+              <Link href="/auth/sign-up">
                 <Button size="sm">Get Started</Button>
               </Link>
             </div>
@@ -206,7 +206,7 @@ export default function Navbar() {
                 </Link>
                 <div className="pt-4 mt-4 border-t space-y-3">
                   {!session ? (
-                    <Link href="/auth">
+                    <Link href="/auth/sign-up">
                       <Button className="w-full">Get Started</Button>
                     </Link>
                   ) : (

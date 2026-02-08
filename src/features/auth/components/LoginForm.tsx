@@ -14,12 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-export default function LoginForm({
-  onToggleForm,
+export function LoginForm({
   className,
   ...props
-}: React.ComponentPropsWithRef<"div"> & { onToggleForm: () => void }) {
+}: React.ComponentPropsWithRef<"div">) {
   const router = useRouter();
   const { supabase, isMockMode, signIn } = useAuth();
   const [email, setEmail] = useState("");
@@ -138,9 +138,9 @@ export default function LoginForm({
               </div>
               <div className="text-center text-sm">
                 Don&apos;t have an account?{" "}
-                <a href="#" onClick={onToggleForm} className="underline underline-offset-4">
+                <Link href="/auth/sign-up" className="underline underline-offset-4">
                   Sign up
-                </a>
+                </Link>
               </div>
             </div>
           </form>
