@@ -70,4 +70,5 @@ export interface IGenAIService {
   generateQuiz(params: GenerateQuizParams): Promise<GenerateQuizResponse>;
   markAnswers(answers: AnswerToMark[]): Promise<MarkQuizResponse>;
   uploadFile(fileBlob: Blob, displayName: string): Promise<FileUploadResult>;
+  generateQuizStream(params: GenerateQuizParams): Promise<ReadableStream<Uint8Array>>; // ADD THIS
 }

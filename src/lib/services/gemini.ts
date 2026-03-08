@@ -10,7 +10,10 @@ import type {
 } from "./types";
 
 function cleanGeminiResponse(text: string): string {
-  let cleaned = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+  let cleaned = text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
   const first = cleaned.indexOf("{");
   const last = cleaned.lastIndexOf("}");
   if (first !== -1 && last !== -1) {
@@ -26,7 +29,10 @@ export class GeminiGenAIService implements IGenAIService {
     this.client = new GoogleGenAI({ apiKey });
   }
 
-  async uploadFile(fileBlob: Blob, displayName: string): Promise<FileUploadResult> {
+  async uploadFile(
+    fileBlob: Blob,
+    displayName: string,
+  ): Promise<FileUploadResult> {
     const file = await this.client.files.upload({
       file: fileBlob,
       config: { displayName },
@@ -52,7 +58,9 @@ export class GeminiGenAIService implements IGenAIService {
     };
   }
 
-  async generateQuiz(params: GenerateQuizParams): Promise<GenerateQuizResponse> {
+  async generateQuiz(
+    params: GenerateQuizParams,
+  ): Promise<GenerateQuizResponse> {
     const {
       files,
       text,
@@ -103,9 +111,9 @@ export class GeminiGenAIService implements IGenAIService {
     Output JSON only.
   `.trim();
 
-    const parts: Array<{ text: string } | ReturnType<typeof createPartFromUri>> = [
-      { text: basePrompt },
-    ];
+    const parts: Array<
+      { text: string } | ReturnType<typeof createPartFromUri>
+    > = [{ text: basePrompt }];
 
     if (files) {
       for (const file of files) {
@@ -136,7 +144,13 @@ export class GeminiGenAIService implements IGenAIService {
                   enum: ["easy", "medium", "hard", "expert"],
                 },
               },
-              required: ["title", "description", "subject", "difficulty", "tags"],
+              required: [
+                "title",
+                "description",
+                "subject",
+                "difficulty",
+                "tags",
+              ],
             },
             questions: {
               type: Type.ARRAY,
@@ -174,12 +188,103 @@ export class GeminiGenAIService implements IGenAIService {
     }
   }
 
+  async generateQuizStream(
+    params: GenerateQuizParams,
+  ): Promise<ReadableStream<Uint8Array>> {
+    const {
+      files,
+      text,
+      difficulty = "medium",
+      numQuestions = 5,
+      type = { selectedTypes: [], distribution: {} },
+      topic = "",
+    } = params;
+
+    const distributionText =
+      Object.keys(type.distribution).length > 0
+        ? Object.entries(type.distribution)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(", ")
+        : "evenly distributed";
+
+    const basePrompt = `
+    You are an expert quiz creator. Produce exactly ${numQuestions}
+    ${difficulty}-level quiz questions on the subject "${topic}"
+    based on the ${files ? "uploaded PDF documents" : "following text"} below:
+    ${text || "(no inline text provided)"}
+
+    Use this distribution of question types: ${distributionText}.
+    Allow only these types: ${type.selectedTypes.join(", ")}.
+
+    Respond with a single JSON object — no markdown, no commentary, raw JSON only:
+
+    {
+      "quiz": {
+        "title": "string",
+        "description": "string",
+        "subject": "string",
+        "tags": ["string"],
+        "difficulty": "easy" | "medium" | "hard" | "expert"
+      },
+      "questions": [
+        {
+          "type": "mcq" | "fill" | "truefalse" | "shortanswer" | "essay",
+          "question_text": "string",
+          "options": ["string"],
+          "answer": "string",
+          "explanation": "string",
+          "marks": number
+        }
+      ]
+    }
+    Output raw JSON only. No backticks. No explanation.
+  `.trim();
+
+    const parts: Array<
+      { text: string } | ReturnType<typeof createPartFromUri>
+    > = [{ text: basePrompt }];
+
+    if (files) {
+      for (const file of files) {
+        parts.push(createPartFromUri(file.uri, file.mimeType));
+      }
+    }
+
+    // generateContentStream returns an async iterable per the @google/genai SDK
+    const streamingResponse = await this.client.models.generateContentStream({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts }],
+      // No responseMimeType here — structured output blocks streaming
+    });
+
+    const encoder = new TextEncoder();
+
+    return new ReadableStream<Uint8Array>({
+      async start(controller) {
+        try {
+          for await (const chunk of streamingResponse) {
+            const text = chunk.text ?? "";
+            if (text) {
+              controller.enqueue(encoder.encode(text));
+            }
+          }
+          controller.close();
+        } catch (err) {
+          controller.error(err);
+        }
+      },
+    });
+  }
+
   async markAnswers(answers: AnswerToMark[]): Promise<MarkQuizResponse> {
     const autoMarkable = answers.filter(
-      (a) => a.question_type === "mcq" || a.question_type === "truefalse" || a.question_type === "fill"
+      (a) =>
+        a.question_type === "mcq" ||
+        a.question_type === "truefalse" ||
+        a.question_type === "fill",
     );
     const manualMark = answers.filter(
-      (a) => a.question_type === "shortanswer" || a.question_type === "essay"
+      (a) => a.question_type === "shortanswer" || a.question_type === "essay",
     );
 
     const results: MarkingResult[] = [];
@@ -228,7 +333,7 @@ ${a.explanation ? `Additional Context: ${a.explanation}` : ""}
 
 Student's Answer:
 ${a.user_answer || "(No answer provided)"}
-`
+`,
   )
   .join("\n---\n")}
 
@@ -278,7 +383,10 @@ For each question, provide:
             return;
           }
 
-          const marksAwarded = Math.min(Math.max(0, marked.marks_awarded), question.marks_possible);
+          const marksAwarded = Math.min(
+            Math.max(0, marked.marks_awarded),
+            question.marks_possible,
+          );
 
           let correctnessStatus: "correct" | "partial" | "incorrect";
           if (marksAwarded >= question.marks_possible) {
@@ -305,9 +413,18 @@ For each question, provide:
       }
     }
 
-    const totalMarksAwarded = results.reduce((sum, r) => sum + r.marks_awarded, 0);
-    const totalMarksPossible = results.reduce((sum, r) => sum + r.marks_possible, 0);
-    const percentage = totalMarksPossible > 0 ? (totalMarksAwarded / totalMarksPossible) * 100 : 0;
+    const totalMarksAwarded = results.reduce(
+      (sum, r) => sum + r.marks_awarded,
+      0,
+    );
+    const totalMarksPossible = results.reduce(
+      (sum, r) => sum + r.marks_possible,
+      0,
+    );
+    const percentage =
+      totalMarksPossible > 0
+        ? (totalMarksAwarded / totalMarksPossible) * 100
+        : 0;
 
     let overallFeedback = "";
     if (percentage >= 90) {
@@ -336,7 +453,10 @@ For each question, provide:
     };
   }
 
-  private applyFallbackMarking(manualMark: AnswerToMark[], results: MarkingResult[]): void {
+  private applyFallbackMarking(
+    manualMark: AnswerToMark[],
+    results: MarkingResult[],
+  ): void {
     manualMark.forEach((question) => {
       const userAnswer = question.user_answer?.trim() || "";
       const correctAnswer = question.correct_answer?.trim().toLowerCase() || "";
@@ -351,19 +471,25 @@ For each question, provide:
         feedback = "No answer provided.";
         correctnessStatus = "incorrect";
       } else {
-        const correctWords = correctAnswer.split(/\s+/).filter((w) => w.length > 3);
+        const correctWords = correctAnswer
+          .split(/\s+/)
+          .filter((w) => w.length > 3);
         const userWords = userAnswerLower.split(/\s+/);
         const matchingWords = correctWords.filter((word) =>
-          userWords.some((uw) => uw.includes(word) || word.includes(uw))
+          userWords.some((uw) => uw.includes(word) || word.includes(uw)),
         );
 
-        const matchRatio = correctWords.length > 0 ? matchingWords.length / correctWords.length : 0;
+        const matchRatio =
+          correctWords.length > 0
+            ? matchingWords.length / correctWords.length
+            : 0;
 
         if (matchRatio >= 0.8) {
           marksAwarded = question.marks_possible * 0.9;
           feedback =
             "Your answer covers most of the key points and demonstrates a strong understanding of the material. Well done! You have clearly explained the main concepts with relevant details and examples.";
-          correctnessStatus = marksAwarded >= question.marks_possible ? "correct" : "partial";
+          correctnessStatus =
+            marksAwarded >= question.marks_possible ? "correct" : "partial";
         } else if (matchRatio >= 0.6) {
           marksAwarded = question.marks_possible * 0.7;
           feedback =
