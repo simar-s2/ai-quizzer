@@ -86,9 +86,12 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string | null
+          ease_factor: number
           feedback: Json | null
           id: string
+          interval_days: number
           marks_obtained: number
+          next_review_at: string | null
           quiz_id: string | null
           score: number
           time_taken: number | null
@@ -99,9 +102,12 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           created_at?: string | null
+          ease_factor?: number
           feedback?: Json | null
           id?: string
+          interval_days?: number
           marks_obtained: number
+          next_review_at?: string | null
           quiz_id?: string | null
           score: number
           time_taken?: number | null
@@ -112,9 +118,12 @@ export type Database = {
         Update: {
           completed_at?: string | null
           created_at?: string | null
+          ease_factor?: number
           feedback?: Json | null
           id?: string
+          interval_days?: number
           marks_obtained?: number
+          next_review_at?: string | null
           quiz_id?: string | null
           score?: number
           time_taken?: number | null
@@ -354,6 +363,45 @@ export type Database = {
           total_attempts: number | null
         }
         Relationships: []
+      }
+      quiz_srs_state: {
+        Row: {
+          completed_at: string | null
+          ease_factor: number | null
+          interval_days: number | null
+          next_review_at: string | null
+          quiz_difficulty:
+            | Database["public"]["Enums"]["difficulty_level"]
+            | null
+          quiz_id: string | null
+          quiz_subject: string | null
+          quiz_title: string | null
+          score: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_performance_stats"
+            referencedColumns: ["quiz_id"]
+          },
+          {
+            foreignKeyName: "attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "recent_activity"
+            referencedColumns: ["quiz_id"]
+          },
+        ]
       }
       recent_activity: {
         Row: {
