@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/supabase/server";
 import { getGenAIService, type AnswerToMark } from "@/lib/services";
 import { getQuizRepository } from "@/lib/repositories";
+import { calculateNextReview } from "@/lib/services/SpacedRepetition";
 
 export async function POST(req: Request) {
   try {
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
     if (!quiz_id || !answers || !Array.isArray(answers)) {
       return NextResponse.json(
         { error: "Missing required fields: quiz_id, answers" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -30,7 +31,10 @@ export async function POST(req: Request) {
 
     const questions = await repository.getQuestionsByQuizId(quiz_id);
     if (questions.length === 0) {
-      return NextResponse.json({ error: "Questions not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Questions not found" },
+        { status: 404 },
+      );
     }
 
     const answersToMark: AnswerToMark[] = answers.map(
@@ -49,11 +53,33 @@ export async function POST(req: Request) {
           marks_possible: question.marks || 1,
           explanation: question.explanation || undefined,
         };
-      }
+      },
     );
 
     const genAIService = getGenAIService();
     const markingResult = await genAIService.markAnswers(answersToMark);
+
+    const { createServerSupabaseClient } =
+      await import("@/lib/supabase/server");
+    const supabase = await createServerSupabaseClient();
+
+    const { data: previousAttempts } = await supabase
+      .from("attempts")
+      .select("score, ease_factor, interval_days, next_review_at")
+      .eq("quiz_id", quiz_id)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const prev = previousAttempts?.[0];
+    const repetitions = prev?.next_review_at ? 1 : 0;
+
+    const srs = calculateNextReview({
+      score: markingResult.percentage,
+      easeFactor: prev?.ease_factor ?? 2.5,
+      intervalDays: prev?.interval_days ?? 0,
+      repetitions,
+    });
 
     const attempt = await repository.saveAttempt({
       user_id: user.id,
@@ -63,6 +89,9 @@ export async function POST(req: Request) {
       marks_obtained: markingResult.total_marks_awarded,
       feedback: { overall: markingResult.overall_feedback },
       time_taken: time_taken || null,
+      ease_factor: srs.easeFactor,
+      interval_days: srs.intervalDays,
+      next_review_at: srs.nextReviewAt.toISOString(),
     });
 
     const attemptAnswers = markingResult.question_results.map((result) => ({
@@ -70,7 +99,8 @@ export async function POST(req: Request) {
       question_id: result.question_id,
       user_answer:
         answers.find(
-          (a: { question_id: string; user_answer?: string }) => a.question_id === result.question_id
+          (a: { question_id: string; user_answer?: string }) =>
+            a.question_id === result.question_id,
         )?.user_answer || null,
       is_correct: result.is_correct,
       correctness_status: result.correctness_status,
@@ -92,7 +122,8 @@ export async function POST(req: Request) {
       question_results: markingResult.question_results,
     });
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : "Failed to mark quiz";
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to mark quiz";
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
