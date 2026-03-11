@@ -1,35 +1,59 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { useAuth } from "@/components/providers/AuthProvider"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import { deleteQuiz } from "@/features/quiz/services/deleteQuiz"
-import { fetchDashboardStats } from "@/features/dashboard/services/fetchDashboardStats"
-import { fetchPerformanceData, fetchQuestionTypeData, fetchWeeklyActivityData } from "@/features/dashboard/services/fetchChartData"
-import type { PerformanceData, QuestionTypeData, WeeklyActivityData } from "@/features/dashboard/services/fetchChartData"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Loader2, Plus } from "lucide-react"
-import Link from "next/link"
-import { StatsCards, StreakCard, StudyTimeCard } from "@/features/dashboard/components/StatsCards"
-import { PerformanceChart, QuestionTypeChart, WeeklyActivityChart } from "@/features/dashboard/components/Charts"
-import { RecentActivity } from "@/features/dashboard/components/RecentActivity"
-import { createClient, type Quiz } from "@/lib/supabase/client"
-import { DataTable, getColumns } from "@/features/dashboard/components/DataTable"
+import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { deleteQuiz } from "@/features/quiz/services/deleteQuiz";
+import { fetchDashboardStats } from "@/features/dashboard/services/fetchDashboardStats";
+import {
+  fetchPerformanceData,
+  fetchQuestionTypeData,
+  fetchWeeklyActivityData,
+} from "@/features/dashboard/services/fetchChartData";
+import type {
+  PerformanceData,
+  QuestionTypeData,
+  WeeklyActivityData,
+} from "@/features/dashboard/services/fetchChartData";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Loader2, Plus } from "lucide-react";
+import Link from "next/link";
+import {
+  StatsCards,
+  StreakCard,
+  StudyTimeCard,
+} from "@/features/dashboard/components/StatsCards";
+import {
+  PerformanceChart,
+  QuestionTypeChart,
+  WeeklyActivityChart,
+} from "@/features/dashboard/components/Charts";
+import { RecentActivity } from "@/features/dashboard/components/RecentActivity";
+import { createClient, type Quiz } from "@/lib/supabase/client";
+import {
+  DataTable,
+  getColumns,
+} from "@/features/dashboard/components/DataTable";
+import {
+  fetchReviewsDue,
+  type ReviewDueItem,
+} from "@/features/dashboard/services/fetchReviewsDue";
+import { ReviewDueCard } from "@/features/dashboard/components/ReviewDueCard";
 
 interface QuizWithAttempts extends Quiz {
-  attempts?: Array<{ id: string; score: number; completed_at: string | null }>
-  best_score?: number | null
-  attempts_count?: number
+  attempts?: Array<{ id: string; score: number; completed_at: string | null }>;
+  best_score?: number | null;
+  attempts_count?: number;
 }
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const supabase = useRef(createClient()).current
-  const [quizzes, setQuizzes] = useState<QuizWithAttempts[]>([])
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const supabase = useRef(createClient()).current;
+  const [quizzes, setQuizzes] = useState<QuizWithAttempts[]>([]);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalQuizzes: 0,
     completedQuizzes: 0,
@@ -39,98 +63,109 @@ export default function DashboardPage() {
     bestScore: 0,
     currentStreak: 0,
     totalStudyTimeMinutes: 0,
-  })
+  });
   const [chartData, setChartData] = useState<{
-    performance: PerformanceData[]
-    questionTypes: QuestionTypeData[]
-    weeklyActivity: WeeklyActivityData[]
+    performance: PerformanceData[];
+    questionTypes: QuestionTypeData[];
+    weeklyActivity: WeeklyActivityData[];
   }>({
     performance: [],
     questionTypes: [],
     weeklyActivity: [],
-  })
-  const { user, loading: authLoading } = useAuth()
-  const hasFetched = useRef(false)
+  });
+  const { user, loading: authLoading } = useAuth();
+  const hasFetched = useRef(false);
+  const [reviewsDue, setReviewsDue] = useState<ReviewDueItem[]>([]);
 
   useEffect(() => {
-    if (hasFetched.current || authLoading) return
-    
+    if (hasFetched.current || authLoading) return;
+
     if (!user) {
-      router.push("/")
-      return
+      router.push("/");
+      return;
     }
 
-    hasFetched.current = true
-    loadDashboardData()
+    hasFetched.current = true;
+    loadDashboardData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user, router])
+  }, [authLoading, user, router]);
 
   const loadDashboardData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       // Fetch stats
-      const dashboardStats = await fetchDashboardStats()
-      setStats(dashboardStats)
+      const dashboardStats = await fetchDashboardStats();
+      setStats(dashboardStats);
 
       // Fetch chart data
       const [performance, questionTypes, weeklyActivity] = await Promise.all([
         fetchPerformanceData(),
         fetchQuestionTypeData(),
         fetchWeeklyActivityData(),
-      ])
+      ]);
 
       setChartData({
         performance,
         questionTypes,
         weeklyActivity,
-      })
+      });
+
+      const reviewsDueData = await fetchReviewsDue();
+      setReviewsDue(reviewsDueData);
 
       // Fetch quizzes for the table
       const { data, error } = await supabase
         .from("quizzes")
         .select(`*, attempts (id, score, completed_at)`)
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: false });
 
       if (!error && data) {
         const processedData = data.map((quiz) => {
-          const attempts = quiz.attempts || []
-          const bestScore = attempts.length > 0 ? Math.max(...attempts.map((a) => a.score)) : null
-          return { ...quiz, best_score: bestScore, attempts_count: attempts.length }
-        })
-        setQuizzes(processedData)
+          const attempts = quiz.attempts || [];
+          const bestScore =
+            attempts.length > 0
+              ? Math.max(...attempts.map((a) => a.score))
+              : null;
+          return {
+            ...quiz,
+            best_score: bestScore,
+            attempts_count: attempts.length,
+          };
+        });
+        setQuizzes(processedData);
       } else if (error) {
-        toast.error("Failed to load quizzes")
+        toast.error("Failed to load quizzes");
       }
     } catch (error) {
-      console.error("Error loading dashboard:", error)
-      toast.error("Failed to load dashboard data")
+      console.error("Error loading dashboard:", error);
+      toast.error("Failed to load dashboard data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDeleteQuiz = async (quizId: string) => {
-    if (!confirm("Delete this quiz?")) return
+    if (!confirm("Delete this quiz?")) return;
     try {
-      const result = await deleteQuiz(quizId)
+      const result = await deleteQuiz(quizId);
       if (result.success) {
-        toast.success("Quiz deleted")
+        toast.success("Quiz deleted");
         // Reload dashboard data to update stats
-        await loadDashboardData()
+        await loadDashboardData();
       } else {
-        toast.error("Failed to delete")
+        toast.error("Failed to delete");
       }
     } catch {
-      toast.error("Failed to delete")
+      toast.error("Failed to delete");
     }
-  }
+  };
 
   if (loading || authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
   return (
@@ -139,7 +174,9 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Track your progress and manage your quizzes</p>
+            <p className="text-muted-foreground mt-1">
+              Track your progress and manage your quizzes
+            </p>
           </div>
           <Button asChild className="gap-2">
             <Link href="/#quiz-generator">
@@ -166,6 +203,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* ADD THIS BLOCK below the above grid */}
+        <ReviewDueCard reviews={reviewsDue} />
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <QuestionTypeChart data={chartData.questionTypes} />
           <WeeklyActivityChart data={chartData.weeklyActivity} />
@@ -184,17 +224,29 @@ export default function DashboardPage() {
                 <TabsTrigger value="in-progress">In Progress</TabsTrigger>
               </TabsList>
               <TabsContent value="all" className="mt-4">
-                <DataTable columns={getColumns((id) => router.push(`/quiz/${id}`), handleDeleteQuiz)} data={quizzes} />
+                <DataTable
+                  columns={getColumns(
+                    (id) => router.push(`/quiz/${id}`),
+                    handleDeleteQuiz,
+                  )}
+                  data={quizzes}
+                />
               </TabsContent>
               <TabsContent value="completed" className="mt-4">
                 <DataTable
-                  columns={getColumns((id) => router.push(`/quiz/${id}`), handleDeleteQuiz)}
+                  columns={getColumns(
+                    (id) => router.push(`/quiz/${id}`),
+                    handleDeleteQuiz,
+                  )}
                   data={quizzes.filter((q) => q.status === "completed")}
                 />
               </TabsContent>
               <TabsContent value="in-progress" className="mt-4">
                 <DataTable
-                  columns={getColumns((id) => router.push(`/quiz/${id}`), handleDeleteQuiz)}
+                  columns={getColumns(
+                    (id) => router.push(`/quiz/${id}`),
+                    handleDeleteQuiz,
+                  )}
                   data={quizzes.filter((q) => q.status === "in_progress")}
                 />
               </TabsContent>
@@ -203,5 +255,5 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
