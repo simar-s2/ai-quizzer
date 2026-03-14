@@ -29,14 +29,14 @@ export class GeminiGenAIService implements IGenAIService {
     this.client = new GoogleGenAI({ apiKey });
   }
 
-  async uploadFile(
-    fileBlob: Blob,
-    displayName: string,
-  ): Promise<FileUploadResult> {
-    const file = await this.client.files.upload({
-      file: fileBlob,
-      config: { displayName },
-    });
+ async uploadFile(fileBlob: Blob, displayName: string): Promise<FileUploadResult> {
+  const file = await this.client.files.upload({
+    file: fileBlob,
+    config: {
+      displayName,
+      mimeType: fileBlob.type || "application/pdf",
+    },
+  });
 
     let getFile = await this.client.files.get({ name: file.name ?? "" });
     while (getFile.state === "PROCESSING") {

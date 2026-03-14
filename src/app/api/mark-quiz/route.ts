@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/supabase/server";
+import { getAuthenticatedUser, createServerSupabaseClient } from "@/lib/supabase/server";
 import { getGenAIService, type AnswerToMark } from "@/lib/services";
 import { getQuizRepository } from "@/lib/repositories";
 import { calculateNextReview } from "@/lib/services/SpacedRepetition";
@@ -59,8 +59,6 @@ export async function POST(req: Request) {
     const genAIService = getGenAIService();
     const markingResult = await genAIService.markAnswers(answersToMark);
 
-    const { createServerSupabaseClient } =
-      await import("@/lib/supabase/server");
     const supabase = await createServerSupabaseClient();
 
     const { data: previousAttempts } = await supabase

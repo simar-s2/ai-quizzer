@@ -41,14 +41,16 @@ export class MockQuizRepository implements IQuizRepository {
       }
     });
     return questions.sort(
-      (a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+      (a, b) =>
+        new Date(a.created_at || 0).getTime() -
+        new Date(b.created_at || 0).getTime(),
     );
   }
 
   async createQuiz(
     quiz: Omit<QuizInsert, "user_id">,
     questions: Omit<QuestionInsert, "quiz_id">[],
-    userId: string
+    userId: string,
   ): Promise<string> {
     const quizId = generateId();
     const now = new Date().toISOString();
@@ -96,7 +98,11 @@ export class MockQuizRepository implements IQuizRepository {
     return quizId;
   }
 
-  async updateQuizStatus(quizId: string, userId: string, status: QuizStatus): Promise<void> {
+  async updateQuizStatus(
+    quizId: string,
+    userId: string,
+    status: QuizStatus,
+  ): Promise<void> {
     const quiz = dataStore.quizzes.get(quizId);
     if (quiz && quiz.user_id === userId) {
       dataStore.quizzes.set(quizId, {
@@ -120,11 +126,13 @@ export class MockQuizRepository implements IQuizRepository {
       marks_obtained: attempt.marks_obtained,
       feedback: attempt.feedback || null,
       time_taken: attempt.time_taken || null,
+      ease_factor: attempt.ease_factor ?? 2.5,
+      interval_days: attempt.interval_days ?? 0,
+      next_review_at: attempt.next_review_at || null,
       completed_at: now,
       created_at: now,
       updated_at: now,
     };
-
     dataStore.attempts.set(attemptId, newAttempt);
     return newAttempt;
   }

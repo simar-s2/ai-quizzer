@@ -22,17 +22,21 @@ export async function POST(req: Request) {
       const settingsJson = JSON.parse(settings);
 
       if (!files || files.length === 0) {
-        return NextResponse.json({ error: "No files uploaded" }, { status: 400 });
+        return NextResponse.json(
+          { error: "No files uploaded" },
+          { status: 400 },
+        );
       }
 
-      const uploadedFiles: { uri: string; mimeType: string }[] = [];
-
-      for (const file of files) {
-        const buffer = await file.arrayBuffer();
-        const blob = new Blob([buffer], { type: "application/pdf" });
-        const uploaded = await genAIService.uploadFile(blob, file.name);
-        uploadedFiles.push(uploaded);
-      }
+      const uploadedFiles = await Promise.all(
+        files.map(async (file) => {
+          const buffer = await file.arrayBuffer();
+          const blob = new Blob([buffer], {
+            type: file.type || "application/pdf",
+          });
+          return genAIService.uploadFile(blob, file.name);
+        }),
+      );
 
       generateParams = {
         files: uploadedFiles,
@@ -45,7 +49,10 @@ export async function POST(req: Request) {
 
     const geminiResponse = await genAIService.generateQuiz(generateParams);
 
-    const totalMarks = geminiResponse.questions.reduce((sum, q) => sum + (q.marks || 1), 0);
+    const totalMarks = geminiResponse.questions.reduce(
+      (sum, q) => sum + (q.marks || 1),
+      0,
+    );
 
     return NextResponse.json({
       quiz: {
@@ -63,7 +70,8 @@ export async function POST(req: Request) {
       message: "Quiz generated successfully",
     });
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : "Failed to generate quiz";
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to generate quiz";
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

@@ -40,7 +40,7 @@ import {
 import {
   fetchReviewsDue,
   type ReviewDueItem,
-} from "@/features/dashboard/services/fetchReviewsDue";
+} from "@/features/dashboard/services/fetchReviewDue";
 import { ReviewDueCard } from "@/features/dashboard/components/ReviewDueCard";
 
 interface QuizWithAttempts extends Quiz {
