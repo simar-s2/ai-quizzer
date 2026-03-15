@@ -1,3 +1,5 @@
+"use server"
+
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { Quiz, Question } from "@/lib/supabase/client";
 
