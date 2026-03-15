@@ -9,13 +9,13 @@
     "build:mock": "NEXT_PUBLIC_USE_MOCKS=true next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "types:generate": "supabase gen types typescript --project-id $(grep NEXT_PUBLIC_SUPABASE_URL .env.local | cut -d '/' -f 3 | cut -d '.' -f 1) > src/types/database.types.ts",
     "prepare": "husky"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix --max-warnings=0",
-      "tsc --noEmit"
+      "eslint --fix --max-warnings=0"
     ]
   },
   "dependencies": {
