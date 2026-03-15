@@ -9,7 +9,14 @@
     "build:mock": "NEXT_PUBLIC_USE_MOCKS=true next build",
     "start": "next start",
     "lint": "next lint",
-    "types:generate": "supabase gen types typescript --project-id $(grep NEXT_PUBLIC_SUPABASE_URL .env.local | cut -d '/' -f 3 | cut -d '.' -f 1) > src/types/database.types.ts"
+    "types:generate": "supabase gen types typescript --project-id $(grep NEXT_PUBLIC_SUPABASE_URL .env.local | cut -d '/' -f 3 | cut -d '.' -f 1) > src/types/database.types.ts",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix --max-warnings=0",
+      "tsc --noEmit"
+    ]
   },
   "dependencies": {
     "@google/genai": "^1.10.0",
@@ -63,6 +70,8 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "tailwindcss": "^4.1.11",
     "tw-animate-css": "^1.3.6",
     "typescript": "^5"
