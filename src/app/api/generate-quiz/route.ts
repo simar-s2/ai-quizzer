@@ -1,3 +1,10 @@
+/**
+ * Non-streaming quiz generation route.
+ * Superseded by /api/generate-quiz-stream for the main UI.
+ * Kept as a fallback for any integrations that need a single JSON response
+ * rather than a streamed response (e.g. future API consumers, testing).
+ */
+
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/supabase/server";
 import { getGenAIService, type GenerateQuizParams } from "@/lib/services";

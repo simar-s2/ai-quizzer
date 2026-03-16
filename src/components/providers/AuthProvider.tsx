@@ -4,45 +4,16 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import { createClient } from "@/lib/supabase/client";
 import type { Session, User, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import {
+  isMockMode,
+  getMockUser,
+  getMockSession,
+} from "@/lib/config";
 
-const MOCK_USER_ID = "mock-user-00000000-0000-0000-0000-000000000001";
-const MOCK_USER_EMAIL = "testuser@mock.local";
+// REMOVED: MOCK_USER_ID, MOCK_USER_EMAIL, isMockModeEnabled, getMockUser, getMockSession
+// all now imported from @/lib/config which is the single source of truth
+
 const MOCK_AUTH_STORAGE_KEY = "mock-auth-logged-in";
-
-function isMockModeEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_USE_MOCKS === "true";
-}
-
-function getMockUser(): User {
-  return {
-    id: MOCK_USER_ID,
-    email: MOCK_USER_EMAIL,
-    aud: "authenticated",
-    role: "authenticated",
-    email_confirmed_at: new Date().toISOString(),
-    phone: "",
-    confirmed_at: new Date().toISOString(),
-    last_sign_in_at: new Date().toISOString(),
-    app_metadata: { provider: "mock", providers: ["mock"] },
-    user_metadata: { full_name: "Test User", avatar_url: null },
-    identities: [],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    is_anonymous: false,
-  };
-}
-
-function getMockSession(): Session {
-  const user = getMockUser();
-  return {
-    access_token: "mock-access-token",
-    token_type: "bearer",
-    expires_in: 3600,
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
-    refresh_token: "mock-refresh-token",
-    user,
-  };
-}
 
 type AuthContextType = {
   supabase: SupabaseClient<Database> | null;
@@ -74,9 +45,11 @@ function RealAuthProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
+      }
+    );
 
     return () => {
       mounted = false;
@@ -86,16 +59,16 @@ function RealAuthProvider({ children }: { children: React.ReactNode }) {
 
   const user = session?.user ?? null;
 
-  const signIn = useCallback(() => {
-    // Real auth uses supabase.auth methods directly
-  }, []);
+  const signIn = useCallback(() => {}, []);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
   }, [supabase]);
 
   return (
-    <AuthContext.Provider value={{ user, supabase, session, loading, isMockMode: false, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{ user, supabase, session, loading, isMockMode: false, signIn, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -119,12 +92,11 @@ function MockAuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoggedIn(false);
   }, []);
 
-  if (isLoggedIn === null) {
-    return null;
-  }
+  if (isLoggedIn === null) return null;
 
-  const mockSession = isLoggedIn ? getMockSession() : null;
-  const mockUser = isLoggedIn ? getMockUser() : null;
+  // getMockUser and getMockSession now come from @/lib/config
+  const mockSession = isLoggedIn ? getMockSession() as Session : null;
+  const mockUser = isLoggedIn ? getMockUser() as User : null;
 
   return (
     <AuthContext.Provider
@@ -148,17 +120,13 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setIsMock(isMockModeEnabled());
+    setIsMock(isMockMode()); // now uses imported isMockMode from config
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return null;
-  }
+  if (!mounted) return null;
 
-  if (isMock) {
-    return <MockAuthProvider>{children}</MockAuthProvider>;
-  }
+  if (isMock) return <MockAuthProvider>{children}</MockAuthProvider>;
 
   return <RealAuthProvider>{children}</RealAuthProvider>;
 }
